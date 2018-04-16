@@ -169,6 +169,8 @@ void run_program(char **argv, int argc, bool foreground, bool doing_pipe) {
    *
    *
    */
+  char buf[4096];
+
   pid_t child;
   int status;
   child = fork();
@@ -177,26 +179,31 @@ void run_program(char **argv, int argc, bool foreground, bool doing_pipe) {
 
     bool cmd = false;
     // access to check if the command exists
-    list_t list = path_dir_list;
+    list_t *list = path_dir_list;
     size_t list_len = length(list);
 
-    printf("access:%d\n", access(argv[0], F_OK));
-    while (list_len--) {
-      printf("path:%s\n", path_dir_list->data);
-      path_dir_list = path_dir_list->succ;
-    }
-    if (access(argv[0], F_OK) == 0) { // F_OK checks for existence of file
-      printf("%s does exist!\n", argv[0]);
-      cmd = true;
+    //printf("access:%d\n", access(argv[0], F_OK));
+    // char* path;
+    while (list_len-- > 0) {
+      //printf("path:%s\n", path_dir_list->data);
+      snprintf(buf,sizeof(buf), "%s/%s", list->data, argv[0]);
 
-      if (input_fd != STDIN_FILENO) {
-        dup2(input_fd, STDIN_FILENO);
-      }
-      if (output_fd != STDOUT_FILENO) {
-        dup2(output_fd, STDOUT_FILENO);
+      printf("full path: %s\n", buf);
+      list = list->succ;
+      if (access(buf, F_OK) == 0) { // F_OK checks for existence of file
+        printf("%s does exist!\n", buf);
+        cmd = true;
+
+        if (input_fd != STDIN_FILENO) {
+          dup2(input_fd, STDIN_FILENO);
+        }
+        if (output_fd != STDOUT_FILENO) {
+          dup2(output_fd, STDOUT_FILENO);
+        }
+
+        execv(buf, argv);
       }
 
-      execv(argv[0], argv);
     }
 
   } else if (foreground && !doing_pipe) {
