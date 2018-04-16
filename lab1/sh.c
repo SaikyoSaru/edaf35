@@ -36,6 +36,8 @@ static list_t *path_dir_list; /* list of directories in PATH. */
 static int input_fd;          /* for i/o redirection or pipe. */
 static int output_fd;         /* for i/o redirection or pipe */
 
+static char* old_dir;
+
 /* fetch_line: read one line from user and put it in input_buf. */
 int fetch_line(char *prompt) {
   int c;
@@ -171,8 +173,40 @@ void run_program(char **argv, int argc, bool foreground, bool doing_pipe) {
    */
   char buf[4096];
 
+  if (!strcmp(argv[0], "exit")) {
+    exit(0);
+  }
+  // in the case of cd, since
+  // the child process cant change the parent process directory
+
+  if (!strcmp(argv[0], "cd")) {
+    char* old_dir_tmp = getcwd(buf, sizeof(buf));
+    printf ("old_dir_tmp:%s\n", old_dir_tmp);
+
+    if (!strncmp(argv[1],"/",1)) {
+      //printf("tst");
+      chdir(argv[1]);
+      old_dir = old_dir_tmp;
+      return;
+    }
+    if (!strncmp(argv[1],"-",1)) {
+      printf("haages nedre region%s\n", old_dir);
+      chdir(old_dir);
+      old_dir = old_dir_tmp;
+      return;
+    }
+    char* gdir = getcwd(buf, sizeof(buf));
+    char* dir = strcat(gdir, "/");
+    dir = strcat(dir, argv[1]);
+    //printf("directory: %s\n", dir);
+    chdir(dir);
+    old_dir = old_dir_tmp;
+    return;
+  }
+
   pid_t child;
   int status;
+
   child = fork();
 
   if (child == 0) {
@@ -182,13 +216,12 @@ void run_program(char **argv, int argc, bool foreground, bool doing_pipe) {
     list_t *list = path_dir_list;
     size_t list_len = length(list);
 
-    //printf("access:%d\n", access(argv[0], F_OK));
-    // char* path;
     while (list_len-- > 0) {
-      //printf("path:%s\n", path_dir_list->data);
-      snprintf(buf,sizeof(buf), "%s/%s", list->data, argv[0]);
+      // concat the command with the different pathways
+      snprintf(buf, sizeof(buf), "%s/%s", list->data, argv[0]);
 
       printf("full path: %s\n", buf);
+      printf("argv[1]:%s\n", argv[1]);
       list = list->succ;
       if (access(buf, F_OK) == 0) { // F_OK checks for existence of file
         printf("%s does exist!\n", buf);
@@ -202,11 +235,14 @@ void run_program(char **argv, int argc, bool foreground, bool doing_pipe) {
         }
 
         execv(buf, argv);
+        printf("herro 2\n");
       }
-
     }
 
   } else if (foreground && !doing_pipe) {
+
+    printf("pepe\n");
+    waitpid(child, &status, 0);
 
   } else {
 
@@ -285,7 +321,6 @@ void parse_line(void) {
       argv[argc] = NULL;
 
       run_program(argv, argc, foreground, doing_pipe);
-
       input_fd = 0;
       output_fd = 0;
       argc = 0;
