@@ -180,6 +180,7 @@ void run_program(char **argv, int argc, bool foreground, bool doing_pipe) {
   // the child process cant change the parent process directory
 
   if (!strcmp(argv[0], "cd")) {
+    /*
     char* old_dir_tmp = getcwd(buf, sizeof(buf));
     printf ("old_dir_tmp:%s\n", old_dir_tmp);
 
@@ -201,6 +202,8 @@ void run_program(char **argv, int argc, bool foreground, bool doing_pipe) {
     //printf("directory: %s\n", dir);
     chdir(dir);
     old_dir = old_dir_tmp;
+    */
+    chdir(argv[1]);
     return;
   }
 
@@ -220,11 +223,11 @@ void run_program(char **argv, int argc, bool foreground, bool doing_pipe) {
       // concat the command with the different pathways
       snprintf(buf, sizeof(buf), "%s/%s", list->data, argv[0]);
 
-      printf("full path: %s\n", buf);
-      printf("argv[1]:%s\n", argv[1]);
+    //  printf("full path: %s\n", buf);
+  //    printf("argv[1]:%s\n", argv[1]);
       list = list->succ;
       if (access(buf, F_OK) == 0) { // F_OK checks for existence of file
-        printf("%s does exist!\n", buf);
+    //    printf("%s does exist!\n", buf);
         cmd = true;
 
         if (input_fd != STDIN_FILENO) {
@@ -235,13 +238,13 @@ void run_program(char **argv, int argc, bool foreground, bool doing_pipe) {
         }
 
         execv(buf, argv);
-        printf("herro 2\n");
+      //  printf("herro 2\n");
       }
     }
 
   } else if (foreground && !doing_pipe) {
 
-    printf("pepe\n");
+//    printf("pepe\n");
     waitpid(child, &status, 0);
 
   } else {
