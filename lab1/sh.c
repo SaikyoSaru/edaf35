@@ -222,12 +222,8 @@ void run_program(char **argv, int argc, bool foreground, bool doing_pipe) {
     while (list_len-- > 0) {
       // concat the command with the different pathways
       snprintf(buf, sizeof(buf), "%s/%s", list->data, argv[0]);
-
-    //  printf("full path: %s\n", buf);
-  //    printf("argv[1]:%s\n", argv[1]);
       list = list->succ;
       if (access(buf, F_OK) == 0) { // F_OK checks for existence of file
-    //    printf("%s does exist!\n", buf);
         cmd = true;
 
         if (input_fd != STDIN_FILENO) {
