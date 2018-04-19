@@ -186,11 +186,12 @@ void run_program(char **argv, int argc, bool foreground, bool doing_pipe) {
       chdir(getenv("HOME"));
       return;
     }
-
     char old_dir_tmp[MAXBUF];
+
     if (old_dir != NULL) {
       strcpy(old_dir_tmp, old_dir);
     }
+
     old_dir = getcwd(old_dir, MAXBUF);
 
     if (!strncmp(argv[1], "-", 1)) {
@@ -201,13 +202,12 @@ void run_program(char **argv, int argc, bool foreground, bool doing_pipe) {
     }
     return;
   }
-
+  // fork process
   child = fork();
 
   if (child == 0) {
 
     bool cmd = false;
-    // access to check if the command exists
     list_t *list = path_dir_list;
     size_t list_len = length(list);
 
@@ -215,30 +215,26 @@ void run_program(char **argv, int argc, bool foreground, bool doing_pipe) {
       // concat the command with the different pathways
       snprintf(buf, sizeof(buf), "%s/%s", list->data, argv[0]);
       list = list->succ;
+
       if (access(buf, F_OK) == 0) { // F_OK checks for existence of file
         cmd = true;
-
-        if (input_fd != STDIN_FILENO) {
-          dup2(input_fd, STDIN_FILENO);
-        }
-        if (output_fd != STDOUT_FILENO) {
-          dup2(output_fd, STDOUT_FILENO);
-        }
-
-        execv(buf, argv);
-        //  printf("herro 2\n");
+        break;
       }
     }
 
-  } else if (foreground && !doing_pipe) {
+    if (input_fd != STDIN_FILENO) {
+      dup2(input_fd, STDIN_FILENO);
+    }
+    if (output_fd != STDOUT_FILENO) {
+      dup2(output_fd, STDOUT_FILENO);
+    }
+    execv(buf, argv);
 
+  } else if (foreground && !doing_pipe) {
+    // parent process, children must wait
     waitpid(child, &status, 0);
 
-  } else if (foreground) {
-    printf("piping");
-
-  } else {
-
+  } else if (child < 0) {
     error("Fork failed");
     exit(1);
   }
@@ -316,15 +312,15 @@ void parse_line(void) {
       argv[argc] = NULL;
 
       run_program(argv, argc, foreground, doing_pipe);
+
       if (doing_pipe) {
-        // read stuff
         input_fd = pipe_fd[0];
-        close(pipe_fd[1]);
+        close(pipe_fd[1]); // close writing side
+      } else {
+        input_fd = STDIN_FILENO;   // 0
       }
-      input_fd = STDIN_FILENO;   // 0
       output_fd = STDOUT_FILENO; // 1
       argc = 0;
-
       if (type == NEWLINE)
         return;
 
