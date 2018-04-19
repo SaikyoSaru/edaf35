@@ -141,7 +141,9 @@ static unsigned new_swap_page()
 	return count++;
 }
 
-static unsigned fifo_page_replace()
+
+// ************************** OWN IMPLEMENTED CODE *****************************//
+static unsigned fifo_page_replace() //TODO
 {
 	int	page;
 
@@ -150,7 +152,7 @@ static unsigned fifo_page_replace()
 	assert(page < RAM_PAGES);
 }
 
-static unsigned second_chance_replace()
+static unsigned second_chance_replace() //TODO
 {
 	int	page;
 
@@ -159,7 +161,7 @@ static unsigned second_chance_replace()
 	assert(page < RAM_PAGES);
 }
 
-static unsigned take_phys_page()
+static unsigned take_phys_page() //TODO
 {
 	unsigned		page;	/* Page to be replaced. */
 
@@ -168,7 +170,7 @@ static unsigned take_phys_page()
 	return page;
 }
 
-static void pagefault(unsigned virt_page)
+static void pagefault(unsigned virt_page) //TODO
 {
 	unsigned		page;
 
@@ -176,6 +178,8 @@ static void pagefault(unsigned virt_page)
 
 	page = take_phys_page();
 }
+
+// ************************** END OF OWN IMPLEMENTED CODE **********************//
 
 static void translate(unsigned virt_addr, unsigned* phys_addr, bool write)
 {

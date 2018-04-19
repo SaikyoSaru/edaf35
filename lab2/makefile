@@ -10,7 +10,7 @@ OBJS		= machine.o
 
 main: $(OBJS)
 	$(CC) $(LDFLAGS) $(OBJS) -o $(OUT)
-	./machine
+	./machine fac.s
 
 clean:
 	rm -f *.o machine core out
