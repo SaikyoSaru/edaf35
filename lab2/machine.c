@@ -160,14 +160,14 @@ static unsigned take_phys_page() // TODO
       unsigned swap_page = new_swap_page(); // next swap page
       entry->owner->page = swap_page;
       printf("swap write");
-      write_page(page, entry->page);
+      write_page(page, swap_page);
     }
 
     entry->owner->ondisk = 1;
     entry->owner->modified = 0;
     entry->owner->referenced = 0;
-    entry->owner->readonly = 0;
-	//	entry->owner->inmemory = 0;
+    entry->owner->inmemory = 0;
+
   }
   return page;
 }
