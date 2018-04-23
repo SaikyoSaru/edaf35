@@ -1,477 +1,486 @@
 #include <assert.h>
-#include <stdarg.h>
 #include <limits.h>
+#include <stdarg.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
 
-#define NREG		(32)
-#define PAGESIZE_WIDTH	(2)
-#define PAGESIZE	(1<<PAGESIZE_WIDTH)
-#define NPAGES		(2048)
-#define RAM_PAGES	(8)
-#define RAM_SIZE	(RAM_PAGES * PAGESIZE)
-#define SWAP_PAGES	(128)
-#define SWAP_SIZE	(SWAP_PAGES * PAGESIZE)
+#define NREG (32)
+#define PAGESIZE_WIDTH (2)
+#define PAGESIZE (1 << PAGESIZE_WIDTH)
+#define NPAGES (2048)
+#define RAM_PAGES (8)
+#define RAM_SIZE (RAM_PAGES * PAGESIZE)
+#define SWAP_PAGES (128)
+#define SWAP_SIZE (SWAP_PAGES * PAGESIZE)
 #undef DEBUG
 
-#define ADD	(0)
-#define ADDI	(1)
-#define SUB	(2)
-#define SUBI	(3)
-#define SGE	(4)
-#define SGT	(5)
-#define SEQ	(6)
-#define BT      (7)
-#define BF      (8)
-#define BA      (9)
-#define ST      (10)
-#define LD      (11)
-#define CALL	(12)
-#define JMP	(13)
-#define MUL	(14)
-#define SEQI	(15)
-#define HALT    (16)
+#define ADD (0)
+#define ADDI (1)
+#define SUB (2)
+#define SUBI (3)
+#define SGE (4)
+#define SGT (5)
+#define SEQ (6)
+#define BT (7)
+#define BF (8)
+#define BA (9)
+#define ST (10)
+#define LD (11)
+#define CALL (12)
+#define JMP (13)
+#define MUL (14)
+#define SEQI (15)
+#define HALT (16)
 
-char*	mnemonics[] = {
-	[ADD] = "add",
-	[ADDI] = "addi",
-	[SUB] = "sub",
-	[SUBI] = "subi",
-	[SGE] = "sge",
-	[SGT] = "sgt",
-	[SEQ] = "seq",
-	[SEQI] = "seqi",
-	[BT] = "bt",
-	[BF] = "bf",
-	[BA] = "ba",
-	[ST] = "st",
-	[LD] = "ld",
-	[CALL] = "call",
-	[JMP] = "jmp",
-	[MUL] = "mul",
-	[HALT] = "halt",
+char *mnemonics[] = {
+    [ADD] = "add",   [ADDI] = "addi", [SUB] = "sub", [SUBI] = "subi",
+    [SGE] = "sge",   [SGT] = "sgt",   [SEQ] = "seq", [SEQI] = "seqi",
+    [BT] = "bt",     [BF] = "bf",     [BA] = "ba",   [ST] = "st",
+    [LD] = "ld",     [CALL] = "call", [JMP] = "jmp", [MUL] = "mul",
+    [HALT] = "halt",
 };
 
 typedef struct {
-	unsigned	pc;		/* Program counter. */
-	unsigned	reg[NREG];	/* Registers. */
+  unsigned pc;        /* Program counter. */
+  unsigned reg[NREG]; /* Registers. */
 } cpu_t;
 
 typedef struct {
-	unsigned int	page:27;	/* Swap or RAM page. */
-	unsigned int	inmemory:1;	/* Page is in memory. */
-	unsigned int	ondisk:1;	/* Page is on disk. */
-	unsigned int	modified:1;	/* Page was modified while in memory. */
-	unsigned int	referenced:1;	/* Page was referenced recently. */
-	unsigned int	readonly:1;	/* Error if written to (not checked). */
+  unsigned int page : 27;      /* Swap or RAM page. */
+  unsigned int inmemory : 1;   /* Page is in memory. */
+  unsigned int ondisk : 1;     /* Page is on disk. */
+  unsigned int modified : 1;   /* Page was modified while in memory. */
+  unsigned int referenced : 1; /* Page was referenced recently. */
+  unsigned int readonly : 1;   /* Error if written to (not checked). */
 } page_table_entry_t;
 
 typedef struct {
-	page_table_entry_t*	owner;	/* Owner of this phys page. */
-	unsigned		page;	/* Swap page of page if assigned. */
+  page_table_entry_t *owner; /* Owner of this phys page. */
+  unsigned page;             /* Swap page of page if assigned. */
 } coremap_entry_t;
 
-static unsigned long long	num_pagefault;		/* Statistics. */
-static page_table_entry_t	page_table[NPAGES];	/* OS data structure. */
-static coremap_entry_t		coremap[RAM_PAGES];	/* OS data structure. */
-static unsigned			memory[RAM_SIZE];	/* Hardware: RAM. */
-static unsigned			swap[SWAP_SIZE];	/* Hardware: disk. */
-static unsigned			(*replace)(void);	/* Page repl. alg. */
+static unsigned long long num_pagefault;      /* Statistics. */
+static page_table_entry_t page_table[NPAGES]; /* OS data structure. */
+static coremap_entry_t coremap[RAM_PAGES];    /* OS data structure. */
+static unsigned memory[RAM_SIZE];             /* Hardware: RAM. */
+static unsigned swap[SWAP_SIZE];              /* Hardware: disk. */
+static unsigned (*replace)(void);             /* Page repl. alg. */
 
 int x;
 
-unsigned make_instr(unsigned opcode, unsigned dest, unsigned s1, unsigned s2)
-{
-	return (opcode << 26) | (dest << 21) | (s1 << 16) | (s2 & 0xffff);
+unsigned make_instr(unsigned opcode, unsigned dest, unsigned s1, unsigned s2) {
+  return (opcode << 26) | (dest << 21) | (s1 << 16) | (s2 & 0xffff);
 }
 
-unsigned extract_opcode(unsigned instr)
-{
-	return instr >> 26;
+unsigned extract_opcode(unsigned instr) { return instr >> 26; }
+
+unsigned extract_dest(unsigned instr) { return (instr >> 21) & 0x1f; }
+
+unsigned extract_source1(unsigned instr) { return (instr >> 16) & 0x1f; }
+
+signed extract_constant(unsigned instr) { return (short)(instr & 0xffff); }
+
+void error(char *fmt, ...) {
+  va_list ap;
+  char buf[BUFSIZ];
+
+  va_start(ap, fmt);
+  vsprintf(buf, fmt, ap);
+  fprintf(stderr, "error: %s\n", buf);
+  exit(1);
 }
 
-unsigned extract_dest(unsigned instr)
-{
-	return (instr >> 21) & 0x1f;
+static void read_page(unsigned phys_page, unsigned swap_page) {
+  memcpy(&memory[phys_page * PAGESIZE], &swap[swap_page * PAGESIZE],
+         PAGESIZE * sizeof(unsigned));
 }
 
-unsigned extract_source1(unsigned instr)
-{
-	return (instr >> 16) & 0x1f;
+static void write_page(unsigned phys_page, unsigned swap_page) {
+  memcpy(&swap[swap_page * PAGESIZE], &memory[phys_page * PAGESIZE],
+         PAGESIZE * sizeof(unsigned));
 }
 
-signed extract_constant(unsigned instr)
-{
-	return (short)(instr & 0xffff);
+static unsigned new_swap_page() {
+  static int count;
+
+  assert(count < SWAP_PAGES);
+
+  return count++;
 }
 
-void error(char* fmt, ...)
+// ************************** OWN IMPLEMENTED CODE
+// *****************************//
+static unsigned fifo_page_replace() // TODO
 {
-	va_list		ap;
-	char		buf[BUFSIZ];
+  printf("page replace\n");
+  int page;
 
-	va_start(ap, fmt);
-	vsprintf(buf, fmt, ap);
-	fprintf(stderr, "error: %s\n", buf);
-	exit(1);
+  page = (page + 1) % RAM_PAGES; // just increase the page no
+
+  assert(page < RAM_PAGES);
+
+  return page;
 }
 
-static void read_page(unsigned phys_page, unsigned swap_page)
+static unsigned second_chance_replace() // TODO
 {
-	memcpy(&memory[phys_page * PAGESIZE],
-		&swap[swap_page * PAGESIZE],
-		PAGESIZE * sizeof(unsigned));
+  printf("second chance yall\n");
+  int page;
+
+  page = INT_MAX;
+
+  assert(page < RAM_PAGES);
+}
+/*
+ * Fetch the physical page
+ */
+static unsigned take_phys_page() // TODO
+{
+  printf("take phys\n");
+  unsigned page; /* Page to be replaced. */
+
+  page = (*replace)();
+  printf("page to replace:%d\n", page);
+
+  coremap_entry_t *entry = &coremap[page];
+  // check if the owner exist
+  if (entry->owner != NULL) {
+    // check if the owner is on the disk
+    if (entry->owner->ondisk) {
+      if (entry->owner->modified) {
+        printf("modified");
+        write_page(page, entry->page);
+      }
+      // get and
+      entry->owner->page = entry->page;
+    } else {
+
+      unsigned swap_page = new_swap_page(); // next swap page
+      entry->owner->page = swap_page;
+      printf("swap write");
+      write_page(page, entry->page);
+    }
+
+    entry->owner->ondisk = 1;
+    entry->owner->modified = 0;
+    entry->owner->referenced = 0;
+    entry->owner->readonly = 0;
+	//	entry->owner->inmemory = 0;
+  }
+  return page;
 }
 
-static void write_page(unsigned phys_page, unsigned swap_page)
+static void pagefault(unsigned virt_page) // TODO
 {
-	memcpy(&swap[swap_page * PAGESIZE],
-		&memory[phys_page * PAGESIZE],
-		PAGESIZE * sizeof(unsigned));
+  printf("pagefault on page: %d\n", virt_page);
+
+  unsigned page;
+
+  num_pagefault += 1;
+
+  page = take_phys_page(); // get a physical page
+
+  page_table_entry_t *new_page = &page_table[virt_page];
+
+  if (new_page->ondisk) {
+    coremap[page].page = new_page->page;
+    read_page(page, new_page->page);
+  }
+
+  new_page->inmemory = 1;
+  new_page->page = page;
+  coremap[page].owner = new_page;
 }
 
-static unsigned new_swap_page()
-{
-	static int 		count;
+// ************************** END OF OWN IMPLEMENTED CODE
+// **********************//
 
-	assert(count < SWAP_PAGES);
+static void translate(unsigned virt_addr, unsigned *phys_addr, bool write) {
+  unsigned virt_page;
+  unsigned offset;
 
-	return count++;
+  virt_page = virt_addr / PAGESIZE;
+  offset = virt_addr & (PAGESIZE - 1);
+
+  if (!page_table[virt_page].inmemory) // triggered
+    pagefault(virt_page);
+
+  page_table[virt_page].referenced = 1;
+
+  if (write)
+    page_table[virt_page].modified = 1;
+
+  *phys_addr = page_table[virt_page].page * PAGESIZE + offset;
 }
 
+static unsigned read_memory(unsigned *memory, unsigned addr) {
+  unsigned phys_addr;
 
-// ************************** OWN IMPLEMENTED CODE *****************************//
-static unsigned fifo_page_replace() //TODO
-{
-	int	page;
+  translate(addr, &phys_addr, false);
 
-	page = INT_MAX;
-
-	assert(page < RAM_PAGES);
+  return memory[phys_addr];
 }
 
-static unsigned second_chance_replace() //TODO
-{
-	int	page;
+static void write_memory(unsigned *memory, unsigned addr, unsigned data) {
+  unsigned phys_addr;
 
-	page = INT_MAX;
+  translate(addr, &phys_addr, true);
 
-	assert(page < RAM_PAGES);
+  memory[phys_addr] = data;
 }
 
-static unsigned take_phys_page() //TODO
-{
-	unsigned		page;	/* Page to be replaced. */
+void read_program(char *file, unsigned memory[], int *ninstr) {
+  FILE *in;
+  int opcode;
+  int a, b, c;
+  int i;
+  char buf[BUFSIZ];
+  char text[BUFSIZ];
+  int n;
+  int line;
 
-	page = (*replace)();
+  /* Find out the number of mnemonics. */
+  n = sizeof mnemonics / sizeof mnemonics[0];
 
-	return page;
+  in = fopen(file, "r");
+
+  if (in == NULL)
+    error("cannot open file huehue");
+
+  line = 0;
+
+  while (fgets(buf, sizeof buf, in) != NULL) {
+    if (buf[0] == ';')
+      continue;
+
+    if (sscanf(buf, "%s %d,%d,%d", text, &a, &b, &c) != 4)
+      error("syntax error near: \"%s\"", buf);
+
+    opcode = -1;
+
+    for (i = 0; i < n; ++i) {
+      if (strcmp(text, mnemonics[i]) == 0) {
+        opcode = i;
+        break;
+      }
+    }
+
+    if (opcode < 0)
+      error("syntax error near: \"%s\"", text);
+
+    write_memory(memory, line, make_instr(opcode, a, b, c));
+
+    line += 1;
+  }
+
+  *ninstr = line;
 }
 
-static void pagefault(unsigned virt_page) //TODO
-{
-	unsigned		page;
+int run(int argc, char **argv) {
+  char *file;
+  cpu_t cpu;
+  int i;
+  int j;
+  int ninstr;
+  unsigned instr;
+  unsigned opcode;
+  unsigned source_reg1;
+  int constant;
+  unsigned dest_reg;
+  int source1;
+  int source2;
+  int dest;
+  unsigned data;
+  bool proceed;
+  bool increment_pc;
+  bool writeback;
 
-	num_pagefault += 1;
+  if (argc > 1)
+    file = argv[1];
+  else
+    file = "a.s";
 
-	page = take_phys_page();
-}
+  read_program(file, memory, &ninstr);
 
-// ************************** END OF OWN IMPLEMENTED CODE **********************//
+  /* First instruction to execute is at address 0. */
+  cpu.pc = 0;
+  cpu.reg[0] = 0;
 
-static void translate(unsigned virt_addr, unsigned* phys_addr, bool write)
-{
-	unsigned	virt_page;
-	unsigned	offset;
+  proceed = true;
 
-	virt_page = virt_addr / PAGESIZE;
-	offset = virt_addr & (PAGESIZE - 1);
+  while (proceed) {
 
-	if (!page_table[virt_page].inmemory)
-		pagefault(virt_page);
+    /* Fetch next instruction to execute. */
+    instr = read_memory(memory, cpu.pc);
 
-	page_table[virt_page].referenced = 1;
+    /* Decode the instruction. */
+    opcode = extract_opcode(instr);
+    source_reg1 = extract_source1(instr);
+    constant = extract_constant(instr);
+    dest_reg = extract_dest(instr);
 
-	if (write)
-		page_table[virt_page].modified = 1;
+    /* Fetch operands. */
+    source1 = cpu.reg[source_reg1];
+    source2 = cpu.reg[constant & (NREG - 1)];
 
-	*phys_addr = page_table[virt_page].page * PAGESIZE + offset;
-}
+    increment_pc = true;
+    writeback = true;
 
-static unsigned read_memory(unsigned* memory, unsigned addr)
-{
-	unsigned	phys_addr;
+    printf("pc = %3d: \n", cpu.pc);
+    usleep(100000);
 
-	translate(addr, &phys_addr, false);
+    switch (opcode) {
+    case ADD:
+      puts("ADD");
+			printf("s1: %d, s2: %d\n", source1, source2);
+		  dest = source1 + source2;
+      break;
 
-	return memory[phys_addr];
-}
+    case ADDI:
+      puts("ADDI");
+		  dest = source1 + constant;
+      break;
 
-static void write_memory(unsigned* memory, unsigned addr, unsigned data)
-{
-	unsigned	phys_addr;
+    case SUB:
+      puts("SUB");
+      dest = source1 - source2;
+      break;
 
-	translate(addr, &phys_addr, true);
+    case SUBI:
+      puts("SUBI");
+      dest = source1 - constant;
+      break;
 
-	memory[phys_addr] = data;
-}
+    case MUL:
+      puts("MUL");
+      dest = source1 * source2;
+      break;
 
-void read_program(char* file, unsigned memory[], int* ninstr)
-{
-	FILE*		in;
-	int		opcode;
-	int		a, b, c;
-	int		i;
-	char		buf[BUFSIZ];
-	char		text[BUFSIZ];
-	int		n;
-	int		line;
+    case SGE:
+      puts("SGE");
+      dest = source1 >= source2;
+      break;
 
-	/* Find out the number of mnemonics. */
-	n = sizeof mnemonics / sizeof mnemonics[0];
+    case SGT:
+      puts("SGT");
+      dest = source1 > source2;
+      break;
 
-	in = fopen(file, "r");
+    case SEQ:
+      puts("SEQ");
+      dest = source1 == source2;
+      break;
 
-	if (in == NULL)
-		error("cannot open file");
+    case SEQI:
+      puts("SEQI");
+      dest = source1 == constant;
+      break;
 
-	line = 0;
+    case BT:
+      puts("BT");
+      writeback = false;
+      if (source1 != 0) {
+        cpu.pc = constant;
+        increment_pc = false;
+      }
+      break;
 
-	while (fgets(buf, sizeof buf, in) != NULL) {
-		if (buf[0] == ';')
-			continue;
+    case BF:
+      puts("BF");
+      writeback = false;
+      if (source1 == 0) {
+        cpu.pc = constant;
+        increment_pc = false;
+      }
+      break;
 
-		if (sscanf(buf, "%s %d,%d,%d", text, &a, &b, &c) != 4)
-			error("syntax error near: \"%s\"", buf);
+    case BA:
+      puts("BA");
+      writeback = false;
+      increment_pc = false;
+      cpu.pc = constant;
+      break;
 
-		opcode = -1;
+    case LD:
+      puts("LD");
+      data = read_memory(memory, source1 + constant);
+      dest = data;
+      break;
 
-		for (i = 0; i < n; ++i) {
-			if (strcmp(text, mnemonics[i]) == 0) {
-				opcode = i;
-				break;
-			}
-		}
+    case ST:
+      puts("ST");
+      data = cpu.reg[dest_reg];
+      write_memory(memory, source1 + constant, data);
+      writeback = false;
+      break;
 
-		if (opcode < 0)
-			error("syntax error near: \"%s\"", text);
+    case CALL:
+      puts("CALL");
+      increment_pc = false;
+      dest = cpu.pc + 1;
+      dest_reg = 31;
+      cpu.pc = constant;
+      break;
 
-		write_memory(memory, line, make_instr(opcode, a, b, c));
+    case JMP:
+      puts("JMP");
+      increment_pc = false;
+      writeback = false;
+      cpu.pc = source1;
+      break;
 
-		line += 1;
-	}
+    case HALT:
+      puts("HALT");
+      increment_pc = false;
+      writeback = false;
+      proceed = false;
+      break;
 
-	*ninstr = line;
-}
+    default:
+      error("illegal instruction at pc = %d: opcode = %d\n", cpu.pc, opcode);
+    }
 
-int run(int argc, char** argv)
-{
-	char*		file;
-	cpu_t		cpu;
-	int		i;
-	int		j;
-	int		ninstr;
-	unsigned	instr;
-	unsigned	opcode;
-	unsigned	source_reg1;
-	int		constant;
-	unsigned	dest_reg;
-	int		source1;
-	int		source2;
-	int		dest;
-	unsigned	data;
-	bool		proceed;
-	bool		increment_pc;
-	bool		writeback;
+    if (writeback && dest_reg != 0)
+      cpu.reg[dest_reg] = dest;
 
-	if (argc > 1)
-		file = argv[1];
-	else
-		file = "a.s";
-
-	read_program(file, memory, &ninstr);
-
-	/* First instruction to execute is at address 0. */
-	cpu.pc = 0;
-	cpu.reg[0] = 0;
-
-	proceed = true;
-
-	while (proceed) {
-
-		/* Fetch next instruction to execute. */
-		instr = read_memory(memory, cpu.pc);
-
-		/* Decode the instruction. */
-		opcode = extract_opcode(instr);
-		source_reg1 = extract_source1(instr);
-		constant = extract_constant(instr);
-		dest_reg = extract_dest(instr);
-
-		/* Fetch operands. */
-		source1 = cpu.reg[source_reg1];
-		source2 = cpu.reg[constant & (NREG-1)];
-
-		increment_pc = true;
-		writeback = true;
-
-		printf("pc = %3d: ", cpu.pc);
-
-		switch (opcode) {
-		case ADD:
-			puts("ADD");
-			dest = source1 + source2;
-			break;
-
-		case ADDI:
-			puts("ADDI");
-			dest = source1 + constant;
-			break;
-
-		case SUB:
-			puts("SUB");
-			dest = source1 - source2;
-			break;
-
-		case SUBI:
-			puts("SUBI");
-			dest = source1 - constant;
-			break;
-
-		case MUL:
-			puts("MUL");
-			dest = source1 * source2;
-			break;
-
-		case SGE:
-			puts("SGE");
-			dest = source1 >= source2;
-			break;
-
-		case SGT:
-			puts("SGT");
-			dest = source1 > source2;
-			break;
-
-		case SEQ:
-			puts("SEQ");
-			dest = source1 == source2;
-			break;
-
-		case SEQI:
-			puts("SEQI");
-			dest = source1 == constant;
-			break;
-
-		case BT:
-			puts("BT");
-			writeback = false;
-			if (source1 != 0) {
-				cpu.pc = constant;
-				increment_pc = false;
-			}
-			break;
-
-		case BF:
-			puts("BF");
-			writeback = false;
-			if (source1 == 0) {
-				cpu.pc = constant;
-				increment_pc = false;
-			}
-			break;
-
-		case BA:
-			puts("BA");
-			writeback = false;
-			increment_pc = false;
-			cpu.pc = constant;
-			break;
-
-		case LD:
-			puts("LD");
-			data = read_memory(memory, source1 + constant);
-			dest = data;
-			break;
-
-		case ST:
-			puts("ST");
-			data = cpu.reg[dest_reg];
-			write_memory(memory, source1 + constant, data);
-			writeback = false;
-			break;
-
-		case CALL:
-			puts("CALL");
-			increment_pc = false;
-			dest = cpu.pc + 1;
-			dest_reg = 31;
-			cpu.pc = constant;
-			break;
-
-		case JMP:
-			puts("JMP");
-			increment_pc = false;
-			writeback = false;
-			cpu.pc = source1;
-			break;
-
-		case HALT:
-			puts("HALT");
-			increment_pc = false;
-			writeback = false;
-			proceed = false;
-			break;
-
-		default:
-			error("illegal instruction at pc = %d: opcode = %d\n",
-				cpu.pc, opcode);
-		}
-
-		if (writeback && dest_reg != 0)
-			cpu.reg[dest_reg] = dest;
-
-		if (increment_pc)
-			cpu.pc += 1;
+    if (increment_pc)
+      cpu.pc += 1;
 
 #ifdef DEBUG
-		i = 0;
-		while (i < NREG) {
-			for (j = 0; j < 4; ++j, ++i) {
-				if (j > 0)
-					printf("| ");
-				printf("R%02d = %-12d", i, cpu.reg[i]);
-			}
-			printf("\n");
-		}
+    i = 0;
+    while (i < NREG) {
+      for (j = 0; j < 4; ++j, ++i) {
+        if (j > 0)
+          printf("| ");
+        printf("R%02d = %-12d", i, cpu.reg[i]);
+      }
+      printf("\n");
+    }
 #endif
-	}
+  }
 
-	i = 0;
-	while (i < NREG) {
-		for (j = 0; j < 4; ++j, ++i) {
-			if (j > 0)
-				printf("| ");
-			printf("R%02d = %-12d", i, cpu.reg[i]);
-		}
-		printf("\n");
-
-
-	}
-	return 0;
+  i = 0;
+  while (i < NREG) {
+    for (j = 0; j < 4; ++j, ++i) {
+      if (j > 0)
+        printf("| ");
+      printf("R%02d = %-12d", i, cpu.reg[i]);
+    }
+    printf("\n");
+  }
+  return 0;
 }
 
-int main(int argc, char** argv)
-{
+int main(int argc, char **argv) {
 #if 1
-	replace = fifo_page_replace;
+  replace = fifo_page_replace;
 #else
-	replace = second_chance_replace;
+  replace = second_chance_replace;
 #endif
 
-	run(argc, argv);
+  run(argc, argv);
 
-	printf("%llu page faults\n", num_pagefault);
+  printf("%llu page faults\n", num_pagefault);
 }
