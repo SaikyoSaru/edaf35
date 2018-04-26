@@ -109,9 +109,7 @@ static void write_page(unsigned phys_page, unsigned swap_page) {
 
 static unsigned new_swap_page() {
   static int count;
-
   assert(count < SWAP_PAGES);
-
   return count++;
 }
 
@@ -127,7 +125,6 @@ static unsigned fifo_page_replace() {
   page = (page + 1) % RAM_PAGES;
 
   assert(page < RAM_PAGES);
-
   return page;
 }
 /*
@@ -146,6 +143,7 @@ static unsigned second_chance_replace() {
   }
   return page;
 }
+
 /*
  * Fetch the physical page
  */
@@ -184,9 +182,7 @@ static void pagefault(unsigned virt_page) {
   num_pagefault++;
 
   page = take_phys_page(); // get a physical page
-
   page_table_entry_t *new_page = &page_table[virt_page];
-
   if (new_page->ondisk) {
     coremap[page].page = new_page->page;
     read_page(page, new_page->page);
@@ -203,24 +199,18 @@ static void pagefault(unsigned virt_page) {
 static void translate(unsigned virt_addr, unsigned *phys_addr, bool write) {
   unsigned virt_page;
   unsigned offset;
-
   virt_page = virt_addr / PAGESIZE;
   offset = virt_addr & (PAGESIZE - 1);
-
   if (!page_table[virt_page].inmemory) // triggered
     pagefault(virt_page);
-
   page_table[virt_page].referenced = 1;
-
   if (write)
     page_table[virt_page].modified = 1;
-
   *phys_addr = page_table[virt_page].page * PAGESIZE + offset;
 }
 
 static unsigned read_memory(unsigned *memory, unsigned addr) {
   unsigned phys_addr;
-
   translate(addr, &phys_addr, false);
 
   return memory[phys_addr];
@@ -476,7 +466,7 @@ int run(int argc, char **argv) {
 }
 
 int main(int argc, char **argv) {
-#if 1
+#if 0
   replace = fifo_page_replace;
 #else
   replace = second_chance_replace;
