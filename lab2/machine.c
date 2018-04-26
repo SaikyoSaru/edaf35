@@ -62,6 +62,9 @@ typedef struct {
 } coremap_entry_t;
 
 static unsigned long long num_pagefault;      /* Statistics. */
+static unsigned long long num_disc_writes;    /* Statistics. */
+static unsigned long long num_page_writes;    /* Statistics. */
+static unsigned long long num_page_reads;    /* Statistics. */
 static page_table_entry_t page_table[NPAGES]; /* OS data structure. */
 static coremap_entry_t coremap[RAM_PAGES];    /* OS data structure. */
 static unsigned memory[RAM_SIZE];             /* Hardware: RAM. */
@@ -93,11 +96,13 @@ void error(char *fmt, ...) {
 }
 
 static void read_page(unsigned phys_page, unsigned swap_page) {
+	num_page_reads++;
   memcpy(&memory[phys_page * PAGESIZE], &swap[swap_page * PAGESIZE],
          PAGESIZE * sizeof(unsigned));
 }
 
 static void write_page(unsigned phys_page, unsigned swap_page) {
+	num_page_writes++;
   memcpy(&swap[swap_page * PAGESIZE], &memory[phys_page * PAGESIZE],
          PAGESIZE * sizeof(unsigned));
 }
@@ -112,73 +117,71 @@ static unsigned new_swap_page() {
 
 // ************************** OWN IMPLEMENTED CODE
 // *****************************//
-static unsigned fifo_page_replace() // TODO
-{
-  printf("page replace\n");
-  int page;
 
-  page = (page + 1) % RAM_PAGES; // just increase the page no
+/*
+ * Basic FIFO queue
+ */
+static unsigned fifo_page_replace() {
+  static unsigned page;
+  // get the next page
+  page = (page + 1) % RAM_PAGES;
 
   assert(page < RAM_PAGES);
 
   return page;
 }
-
-static unsigned second_chance_replace() // TODO
-{
-  printf("second chance yall\n");
-  int page;
-
-  page = INT_MAX;
-
+/*
+ * The second type of algorithm, works like a circular list
+ */
+static unsigned second_chance_replace() {
+  static unsigned page;
+  coremap_entry_t *entry = &coremap[page]; // get the first page
   assert(page < RAM_PAGES);
+  // Goes around the list, and continue checking if they have been referenced
+  // before
+  while (entry->owner != NULL && entry->owner->referenced) {
+    entry->owner->referenced = 0;  // reset page
+    page = (page + 1) % RAM_PAGES; // put it in the rear of the list
+    entry = &coremap[page];        // get the next page
+  }
+  return page;
 }
 /*
  * Fetch the physical page
  */
-static unsigned take_phys_page() // TODO
-{
-  printf("take phys\n");
+static unsigned take_phys_page() {
   unsigned page; /* Page to be replaced. */
 
-  page = (*replace)();
-  printf("page to replace:%d\n", page);
-
-  coremap_entry_t *entry = &coremap[page];
+  page = (*replace)(); // replacement method simple or second chance
+  coremap_entry_t *entry = &coremap[page]; // collect the page from memory
   // check if the owner exist
   if (entry->owner != NULL) {
     // check if the owner is on the disk
     if (entry->owner->ondisk) {
-      if (entry->owner->modified) {
-        printf("modified");
-        write_page(page, entry->page);
-      }
-      // get and
+     if (entry->owner->modified) { // checks if the page has been modified
+       write_page(page, entry->page);
+     }
       entry->owner->page = entry->page;
     } else {
-
-      unsigned swap_page = new_swap_page(); // next swap page
-      entry->owner->page = swap_page;
-      printf("swap write");
-      write_page(page, swap_page);
+      // create a new swap page and assign it to owner of the entry
+      entry->owner->page = new_swap_page();
+      // write the physical memory to the swap page
+      write_page(page, entry->owner->page);
     }
-
+    // init the flags in the struct
     entry->owner->ondisk = 1;
     entry->owner->modified = 0;
     entry->owner->referenced = 0;
     entry->owner->inmemory = 0;
-
   }
   return page;
 }
 
-static void pagefault(unsigned virt_page) // TODO
-{
-  printf("pagefault on page: %d\n", virt_page);
+static void pagefault(unsigned virt_page) {
 
   unsigned page;
 
-  num_pagefault += 1;
+  num_pagefault++;
 
   page = take_phys_page(); // get a physical page
 
@@ -189,7 +192,7 @@ static void pagefault(unsigned virt_page) // TODO
     read_page(page, new_page->page);
   }
 
-  new_page->inmemory = 1;
+  new_page->inmemory = 1; // Indicate that the page now is in the memory
   new_page->page = page;
   coremap[page].owner = new_page;
 }
@@ -225,7 +228,7 @@ static unsigned read_memory(unsigned *memory, unsigned addr) {
 
 static void write_memory(unsigned *memory, unsigned addr, unsigned data) {
   unsigned phys_addr;
-
+  num_disc_writes++;
   translate(addr, &phys_addr, true);
 
   memory[phys_addr] = data;
@@ -329,18 +332,17 @@ int run(int argc, char **argv) {
     writeback = true;
 
     printf("pc = %3d: \n", cpu.pc);
-    usleep(100000);
 
     switch (opcode) {
     case ADD:
       puts("ADD");
-			printf("s1: %d, s2: %d\n", source1, source2);
-		  dest = source1 + source2;
+//      printf("s1: %d, s2: %d\n", source1, source2);
+      dest = source1 + source2;
       break;
 
     case ADDI:
       puts("ADDI");
-		  dest = source1 + constant;
+      dest = source1 + constant;
       break;
 
     case SUB:
@@ -483,4 +485,7 @@ int main(int argc, char **argv) {
   run(argc, argv);
 
   printf("%llu page faults\n", num_pagefault);
+  printf("%llu disc writes\n", num_disc_writes);
+	printf("%llu page writes\n", num_page_writes);
+	printf("%llu page reads\n", num_page_reads);
 }
