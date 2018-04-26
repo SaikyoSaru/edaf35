@@ -154,6 +154,7 @@ static unsigned take_phys_page() {
   coremap_entry_t *entry = &coremap[page]; // collect the page from memory
   // check if the owner exist
   if (entry->owner != NULL) {
+		#if 1
     // check if the owner is on the disk
     if (entry->owner->ondisk) {
      if (entry->owner->modified) { // checks if the page has been modified
@@ -169,8 +170,19 @@ static unsigned take_phys_page() {
     // init the flags in the struct
     entry->owner->ondisk = 1;
     entry->owner->modified = 0;
-    entry->owner->referenced = 0;
+    //entry->owner->referenced = 1;
     entry->owner->inmemory = 0;
+		#else
+    // check if the owner is on the disk
+    if (!entry->owner->ondisk)
+      entry->owner->page = new_swap_page();
+    if (entry->owner->modified)
+      write_page(page, entry->owner->page);
+    // init the flags in the struct
+		entry->page = entry->owner->page;
+    entry->owner->ondisk = 1;
+    entry->owner->inmemory = 0;
+		#endif
   }
   return page;
 }
