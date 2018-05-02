@@ -33,7 +33,7 @@
 // TODO: [DIR_ENTRY] add last "m"odification time to the entry and handle it properly
 static int do_getattr( const char *path, struct stat *st )
 {
-//	printf( "[getattr] Called\n" );
+printf( "[getattr] Called\n" );
 //	printf( "\tAttributes of %s requested\n", path );
 
 	// GNU's definitions of the attributes (http://www.gnu.org/software/libc/manual/html_node/Attribute-Meanings.html):
@@ -323,6 +323,16 @@ static int do_truncate(const char *path, off_t offset) {
 // TODO: [RENAME] implement this!
 static int do_rename(const char *opath, const char *npath) {
   printf("--> Trying to rename %s to %s\n", opath, npath);
+	const char* fn = &opath[1];
+	load_directory();
+	int di = find_dir_entry(fn);
+	if(di<0) {
+		return -ENOENT;
+	} else {
+		dir_entry* de = index2dir_entry(di);
+		strncpy(de->name, &npath[1], FS_NAME_LEN);
+		save_directory();
+	}
   return 0; // reports success, but does nothing
 }
 
@@ -358,6 +368,7 @@ static int do_create(const char *path, mode_t m, struct fuse_file_info *ffi) {
 	de->mode = m; //S_IFREG | 0644;
 	de->size_bytes = 0;
 	de->first_block = EOF_BLOCK; // end of file block
+
 
 	// must save directory changes to disk!
 	save_directory();
