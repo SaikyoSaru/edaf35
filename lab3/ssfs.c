@@ -357,8 +357,9 @@ static int do_unlink(const char *path) {
 		return -ENOENT;
 	} else {
 		printf("removing \n");
+		truncate(path); //remove all blocks in that directory
+		//then put the current file last and the write over it
 
-		unlink(path);
 
 
 	}
