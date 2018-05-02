@@ -49,7 +49,7 @@ printf( "[getattr] Called\n" );
 	st->st_uid = getuid(); // The owner of the file/directory is the user who mounted the filesystem
 	st->st_gid = getgid(); // The group of the file/directory is the same as the group of the user who mounted the filesystem
 	st->st_atime = time( NULL ); // The last "a"ccess of the file/directory is right now
-	st->st_mtime = time( NULL ); // The last "m"odification of the file/directory is right now
+	//st->st_mtime = time( NULL ); // The last "m"odification of the file/directory is right now
 
 	if ( strcmp( path, "/" ) == 0 )
 	{
@@ -72,6 +72,7 @@ printf( "[getattr] Called\n" );
       printf("  -- %d > %.*s\n",di,FS_NAME_LEN,de->name);
 			st->st_size = de->size_bytes;
 			st->st_mode = de->mode;
+			st->st_mtime = de->last_mod;
 		}
     else {
       printf("  -- find_dir_entry cannot find %s\n",fn);
@@ -194,7 +195,7 @@ static int do_write( const char *path, const char *buffer, size_t size, off_t of
 			}
 			// update the size of the file
 			de->size_bytes = offset + size;
-
+			de->last_mod = time(NULL);
 			// flush back the directory, since the file info changed
 			save_directory();
 	}
@@ -305,15 +306,24 @@ static int do_truncate(const char *path, off_t offset) {
 
 		// TODO: [TRUNC_FREE] also free the blocks of this file!
 		// load block map
-		// while(de->first_block != EOF_BLOCK) {
-			// freeBlock()
-		//	de->first_block = bmap.blockmap[de->first_block];
-		// }
-		// save block map
+		unsigned short* bmap = load_blockmap();
+		//go through the list och blocks and free them
+		while(de->first_block != EOF_BLOCK) {
+			 //save the next before freeing
+			unsigned short next = bmap[de->first_block];
+			//free the current block
+			free_block(de->first_block);
+			//update the value
+			de->first_block = next;
+		}
+
+		//save block map
+		save_blockmap();
 
 		// for now just cut loose all blocks! block leak!
-		de->first_block = EOF_BLOCK;
+		//de->first_block = EOF_BLOCK;
 		// must save directory changes to disk!
+		de->last_mod = time(NULL);
 		save_directory();
 
 	}
@@ -331,6 +341,7 @@ static int do_rename(const char *opath, const char *npath) {
 	} else {
 		dir_entry* de = index2dir_entry(di);
 		strncpy(de->name, &npath[1], FS_NAME_LEN);
+		de->last_mod = time(NULL); // patrics mod
 		save_directory();
 	}
   return 0; // reports success, but does nothing
@@ -339,6 +350,20 @@ static int do_rename(const char *opath, const char *npath) {
 // TODO: [REMOVE] implement this!
 static int do_unlink(const char *path) {
   printf("--> Trying to remove %s\n", path);
+	const char* fn = &path[1];
+	load_directory();
+	int di = find_dir_entry(fn);
+	if(di<0) {
+		return -ENOENT;
+	} else {
+		printf("removing \n");
+
+		unlink(path);
+
+
+	}
+	save_directory();
+
   return 0; // reports success, but does nothing
 }
 
@@ -368,6 +393,7 @@ static int do_create(const char *path, mode_t m, struct fuse_file_info *ffi) {
 	de->mode = m; //S_IFREG | 0644;
 	de->size_bytes = 0;
 	de->first_block = EOF_BLOCK; // end of file block
+	de->last_mod = time(NULL); //MATTIAS NOT HAPPY
 
 
 	// must save directory changes to disk!

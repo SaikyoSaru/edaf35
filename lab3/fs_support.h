@@ -60,6 +60,7 @@ you flush your modifications to the disk!!
 typedef struct {
     char name[FS_NAME_LEN];
     // ... some stats - say mode, owner, modtime
+    time_t last_mod;
     mode_t mode;
     unsigned long size_bytes;
     unsigned short first_block;
@@ -84,7 +85,7 @@ int first_empty_dir_entry();
 dir_entry* index2dir_entry(unsigned short);
 void save_directory();
 
-// Working with the block map 
+// Working with the block map
 unsigned short* load_blockmap();
 unsigned short alloc_block();
 unsigned short free_block(unsigned short bid);
