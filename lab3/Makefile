@@ -2,9 +2,9 @@ COMPILER = gcc
 FILESYSTEM_FILES = rawdisk.c ssfs.c fs_support.c
 FORMAT_FILES = fs_support.c rawdisk.c format_myfs.c
 INFO_FILES = fs_support.c rawdisk.c info_myfs.c
-
+CFLAGS = -D_FILE_OFFSET_BITS=64 -D_DARWIN_USE_64_BIT_INODE
 build: $(FILESYSTEM_FILES)
-	$(COMPILER) $(FILESYSTEM_FILES) -o ssfs `pkg-config fuse --cflags --libs`
+	$(COMPILER) $(CFLAGS) $(FILESYSTEM_FILES) -o ssfs `pkg-config fuse --cflags --libs`
 	@echo 'To Mount: ./ssfs -f [mount point]'
 	@echo 'For more debug information, run with -d as well.'
 
