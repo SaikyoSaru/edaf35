@@ -102,6 +102,14 @@ int first_empty_dir_entry() {
   // di contains the first empty entry in this block.
 }
 
+void scooch_dir_entries(unsigned short di) {
+  while(di < DIR_ENTRIES_PER_BLOCK - 1 && !dir_entry_is_empty(bdir.directory[di + 1])) {
+    bdir.directory[di] = bdir.directory[di + 1];
+    di++;
+  }
+  bdir.directory[di].name[0] = 0;
+}
+
 // assuming the latest block is a directory, it returns a pointer to entry i
 dir_entry* index2dir_entry(unsigned short i) {
   return &bdir.directory[i];

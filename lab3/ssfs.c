@@ -33,7 +33,7 @@
 // TODO: [DIR_ENTRY] add last "m"odification time to the entry and handle it properly
 static int do_getattr( const char *path, struct stat *st )
 {
-printf( "[getattr] Called\n" );
+//  printf( "[getattr] Called\n" );
 //	printf( "\tAttributes of %s requested\n", path );
 
 	// GNU's definitions of the attributes (http://www.gnu.org/software/libc/manual/html_node/Attribute-Meanings.html):
@@ -137,24 +137,45 @@ static int do_read( const char *path, char *buffer, size_t size, off_t offset, s
 		return -ENOENT;
 	}
 	dir_entry* de = index2dir_entry(di);
-	unsigned bid = de->first_block;
 
-  char bcache[BLOCK_SIZE];
+
+
+	// first figure out where the write starts (offset in blocks)
+	unsigned short blkoffs = offset/BLOCK_SIZE;
+	// offset within that block
+	unsigned short byteoffs = offset%BLOCK_SIZE;
+  // how many bytes to write in this block
+	unsigned short crtsize = min(size, BLOCK_SIZE - byteoffs);
+
+	unsigned short crtblk = de->first_block;
+	// unsigned short temp = 0;
+	// while(temp < blkoffs) {
+	//
+	// 	if () {
+	//
+	// 	} else {
+	//
+	// 	}
+	// 	temp++;
+	// }
+
+	// here crtblk should point to the right block
+	printf(" --: start reading at block %u",crtblk);
+
+	char bcache[BLOCK_SIZE];
 	// ... //
   // reads the block into the cache
-  readBlock(bid, bcache);
+  readBlock(crtblk, bcache);
   // cannot read all maybe?
-  size_t rsize = min(size, BLOCK_SIZE);
-	// ... //
 
   // we now fill the buffer with this block contents
   // TODO: [READ_OFFSET] account for the offset! May need to traverse the blocks of this file
 	// until the block holding the right offset. Have a look at do_write.
 
-	memcpy( buffer, bcache, rsize );
+	memcpy(buffer, bcache + byteoffs, crtsize);
 
   // how much did we read?
-	return rsize;
+	return crtsize;
 }
 
 // Writes buffer to file, at given offset. Should extend the file if necessary
@@ -330,6 +351,8 @@ static int do_truncate(const char *path, off_t offset) {
 	return 0;
 }
 
+static int do_unlink(const char *path);
+
 // TODO: [RENAME] implement this!
 static int do_rename(const char *opath, const char *npath) {
   printf("--> Trying to rename %s to %s\n", opath, npath);
@@ -339,6 +362,7 @@ static int do_rename(const char *opath, const char *npath) {
 	if(di<0) {
 		return -ENOENT;
 	} else {
+		do_unlink(npath);
 		dir_entry* de = index2dir_entry(di);
 		strncpy(de->name, &npath[1], FS_NAME_LEN);
 		de->last_mod = time(NULL); // patrics mod
@@ -357,14 +381,11 @@ static int do_unlink(const char *path) {
 		return -ENOENT;
 	} else {
 		printf("removing \n");
-		truncate(path); //remove all blocks in that directory
+		do_truncate(path, 0); //remove all blocks in that directory
 		//then put the current file last and the write over it
-
-
-
+		scooch_dir_entries(di);
+		save_directory();
 	}
-	save_directory();
-
   return 0; // reports success, but does nothing
 }
 
