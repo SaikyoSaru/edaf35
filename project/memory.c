@@ -1,48 +1,102 @@
 #include <stdio.h>
 #include <unistd.h>
-static list_node* head;
+#include <stdbool.h>
+
+
+list_t* head = NULL;
 
 typedef struct list_t list_t;
-typedef struct list_node list_node;
-
-struct list_node {
-  list_node* prev;
-  list_node* next;
-};
-
 
 struct list_t {
-  list_node node;
+  list_t next;
   size_t size;
-  void * block; // predefine blocksize? factor of 2 or 4?
+  bool vacant;
 };
 
-list_node* first_free(size_t size)
+list_t* first_free_block()
 {
-  list_node* p = head;
-  while (p->next !=NULL) {
+  if (head == NULL) {
+  //  init_list();
+    return head;
+  }
+
+  list_t* p = head;
+  while (!p->vacant) {
+    if (p->next == NULL) {
+
+    }
     p = p->next;
   }
-// check if the amount of free blocks can accomodate the size
+  return p;
 
 }
+
+list_t* create_block(size_t size)
+{
+
+  list_t* new_block = sbrk(size + sizeof(list_t));
+  list_t* p = first_free_block();
+
+  new_block->size = size;
+  new_block->next = NULL;
+  new_block->vacant = 1;
+
+
+
+}
+
+
 void* malloc(size_t size)
+{
+
+  //list_t* p = first_free_block(size);
+
+  list_t* p = create_block(size);
+
+  printf("ola");
+  return q;
+}
+
+
+void* calloc(size_t size)
 {
   void* p;
   p = sbrk(size);
   if (p < 0) {
     return NULL;
   }
-  list_node* p = first_free(size);
+  list_t* p = first_free(size);
 
   printf("ola");
   return q;
 }
 
+void* realloc(size_t size)
+{
+  void* p;
+  p = sbrk(size);
+  if (p < 0) {
+    return NULL;
+  }
+  list_t* p = first_free(size);
+
+  printf("ola");
+  return q;
+}
+
+
 void free(list_t* node) {
 
 }
 
+void extend_list() {
+  
+  list_t* p = head->next;
+  for (size_t i = 0; i<5; i++) {
+    p = create_block;
+    p = p->next;
+  }
+}
 
 int main(){
   printf("hallo han ar ju retarderad^^");
