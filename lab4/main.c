@@ -62,7 +62,7 @@ static size_t rewrite_instr(pid_t child, uint32_t start, size_t size, instr_tabl
 		 */
 		instr = ptrace(PTRACE_PEEKTEXT, child, addr, NULL);
 		if (instr_field(instr, 21, 10) == EO_DIVW) {
-			printf("instruction:%\nd", instr);
+		//	printf("instruction:%\nd", instr);
 			ptrace(PTRACE_POKETEXT, child, addr, 0); //no need for extra error call due to errno
 		}
 		if (errno != 0)
@@ -173,10 +173,11 @@ int main(int argc, char** argv)
 	n = rewrite_text(child, argv[1], table);
 	pr("parent rewrote child text\n");
 	fprintf(stderr, "%zu divw instr in child program\n", n);
-	if (ptrace(PTRACE_CONT, child, NULL, NULL)<0) {
-		error("ptrace failded, continue 2");
-	}
 	for (;;) {
+	
+		if (ptrace(PTRACE_CONT, child, NULL, NULL)<0) {
+			error("ptrace failded, continue 2");
+		}
 		c = waitpid(child, &status, 0);
 
 		if (c < 0)
@@ -188,25 +189,22 @@ int main(int argc, char** argv)
 		if (c < 0 || !WIFSTOPPED(status))
 			error("parent expected a stopped child");
 
-		pr("parent found stopped child\n");
+//sjukt mÃnga pÃ¥ de andra programmmen		pr("parent found stopped child\n");
 		
 		if (ptrace(PTRACE_GETREGS, child, NULL, &regs) < 0) {
 			error("ptrace failed at : getregs");
 		}
-		//regs.nip = 0; // MODIFY!
-	
 		addr = regs.nip;
-		instr = lookup_instr(table, addr);
-		pr("instruction: %d\n", instr);
-		if(ptrace(PTRACE_SINGLESTEP, child, NULL, NULL) < 0) {
-			error("ptrace failed at singlestep");
-		}
-		//instr = ~0; // MODIFY!
+
+		instr = ptrace(PTRACE_PEEKDATA, child, addr, 0);
+
 		if (instr == 0
 			&& (instr = lookup_instr(table, addr)) != 0
 			&& instr_primary(instr) == PO_X
 			&& instr_field(instr, 21, 10) == EO_DIVW) {
-
+			if (ptrace(PTRACE_POKEDATA, child, addr, instr)<0) {
+				error("failed to poke instrc");
+			}
 			ra = instr_field(instr, 11, 5);
 			rb = instr_field(instr, 16, 5);
 	
@@ -217,6 +215,14 @@ int main(int argc, char** argv)
 				hist[labs(regs.gpr[rb])] += 1;
 
 			ndivw += 1;
+	
+			if(ptrace(PTRACE_SINGLESTEP, child, 0, 0) < 0) {
+				error("singelstep failed");
+			}
+			c = waitpid(child, &status, 0);
+			if ( ptrace(PTRACE_POKEDATA, child, addr, 0) < 0) {
+				error("ptrace failed, pokedata after singlestep");
+			}
 		}
 	}
 
