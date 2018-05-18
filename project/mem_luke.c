@@ -42,26 +42,26 @@ void extend_list(list_t* tail)
 
 list_t* create_slot()
 {
-  list_t* new_slot;
+  list_t* new_slot = new list_t();
   new_slot->size = 0;
   new_slot->next = NULL;
   new_slot->vacant = 1;
   return new_slot;
 }
 
-list_t* create_block(size_t size)
+void create_block(list_t* slot, size_t size)
 {
   list_t* new_block = sbrk(size + sizeof(list_t));
   new_block->size = size;
   new_block->vacant = 0;
-  return new_block;
+  new_block->next = slot->next;
 }
 
 
 void* malloc(size_t size)
 {
   list_t* p = first_free_slot();
-  list_t* p = create_block(size);
+  create_block(p, size);
 
   printf("ola");
   return q;
