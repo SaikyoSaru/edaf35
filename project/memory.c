@@ -27,12 +27,21 @@ list_t* first_free_block()
 list_t* create_block(size_t size)
 {
   list_t* new_block = sbrk(size + sizeof(list_t));
+  if (new_block) {
+    return NULL;
+  }
   new_block->size = size;
   new_block->next = NULL;
-  //new_block->vacant = 1;
   return new_block;
 }
 
+void free(list_t* node) {
+  if (node == NULL) {
+    return;
+  }
+  list_t* p = node;
+  (p - 1)->next = p->next;
+}
 
 void* malloc(size_t size)
 {
@@ -44,28 +53,22 @@ void* malloc(size_t size)
 
 void* calloc(size_t size)
 {
-  list_t * p = malloc(size);
+  list_t* p = malloc(size);
   if (p != NULL) {
     memset(p, 0, size);
   }
   return p;
 }
 
-void free(list_t* node) {
-}
-
 void* realloc(void* node, size_t size)
 {
   list_t* p = malloc(size);
-
   if (p != NULL) {
     memmove(p, node, size);
     free(node);
   }
   return p;
 }
-
-
 
 int main(){
 
@@ -79,9 +82,4 @@ int main(){
 
   test = realloc(test, 4*sizeof(int));
   printf("test realloc: %d at address: %d\n", test[0], &test[0]);
-
-
-
-
-
 }
