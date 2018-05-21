@@ -45,11 +45,6 @@ void free(void* node) {
   }
   list_t* p = ((list_t*)node-1);
   p->vacant = 1;
-  // if (p->next->vacant) {
-  //   list_t* q = p->next;
-  //   p->size += q->size;
-  //   p->next = q->next;
-  // }
 }
 
 void* malloc(size_t size)

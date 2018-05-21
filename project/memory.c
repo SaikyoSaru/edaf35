@@ -37,9 +37,10 @@ list_t* create_block(size_t size)
 }
 
 void free(void* node) {
-  if (node == NULL) {
+  if (!node) {
     return;
   }
+  list_t* p = ((list_t*)node-1);
 }
 
 void* malloc(size_t size)
@@ -54,7 +55,7 @@ void* malloc(size_t size)
     p->prev = current;
     current->next = p;
   }
-  return p;
+  return p+1;
 }
 
 
@@ -101,7 +102,7 @@ int main(){
   printf("test 3 malloc: %d at address: %d\n", *test3, test3);
 
 
-  //free(test2);
+  free(test2);
   //int* test4 = calloc(sizeof(int));
   //*test4 = 100;
   printf("test 1 malloc: %d at address: %d\n", *test, test);
