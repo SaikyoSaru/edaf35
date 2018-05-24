@@ -4,7 +4,7 @@
 #include <string.h>
 
 typedef struct node_t node_t;
-#define INIT_SIZE 16000
+#define INIT_SIZE 32
 
 void* root = NULL;
 
