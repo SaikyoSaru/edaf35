@@ -12,7 +12,7 @@ linked:
 	make run
 
 run:
-	cd gawk-3.1.8/ && make check
+	cd gawk-3.1.8/ && $(MAKE) clean check
 
 clean:
 	rm -f *.o
