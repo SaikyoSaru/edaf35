@@ -49,6 +49,9 @@ Temporary Items
 *.la
 *.lo
 
+# Log files
+*.log
+
 # Shared objects (inc. Windows DLLs)
 *.dll
 *.so
