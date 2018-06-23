@@ -2,7 +2,7 @@
 #include <unistd.h>
 #include <stdbool.h>
 #include <string.h>
-//#include <stdlib.h>
+#include <stdlib.h>
 typedef struct list_t list_t;
 
 list_t* head = NULL;
@@ -36,14 +36,14 @@ list_t* create_block(size_t size)
   return new_block;
 }
 
-void my_free(void* node) {
+void free(void* node) {
   if (!node) {
     return;
   }
   list_t* p = ((list_t*)node-1);
 }
 
-void* my_malloc(size_t size)
+void* malloc(size_t size)
 {
   list_t* p = create_block(size);
   if (head == NULL) {
@@ -59,11 +59,11 @@ void* my_malloc(size_t size)
 }
 
 
-void* my_calloc(size_t size)
+void* calloc(size_t nitems, size_t size)
 {
-  list_t* p = my_malloc(size);
+  list_t* p = malloc(size*nitems);
   if (p != NULL) {
-    memset(p, 0, size);
+    memset(p, 0, nitems*size);
   }
   return p;
 }
@@ -83,12 +83,12 @@ void print_list() {
   }
 }
 
-void* my_realloc(void* node, size_t size)
+void* realloc(void* node, size_t size)
 {
-  list_t* p = my_malloc(size);
+  list_t* p = malloc(size);
   if (p != NULL) {
     memmove(p, node, size);
-    my_free(node);
+    free(node);
   }
   return p;
 }
