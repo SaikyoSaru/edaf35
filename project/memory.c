@@ -2,7 +2,7 @@
 #include <unistd.h>
 #include <stdbool.h>
 #include <string.h>
-
+//#include <stdlib.h>
 typedef struct list_t list_t;
 
 list_t* head = NULL;
@@ -36,14 +36,14 @@ list_t* create_block(size_t size)
   return new_block;
 }
 
-void free(void* node) {
+void my_free(void* node) {
   if (!node) {
     return;
   }
   list_t* p = ((list_t*)node-1);
 }
 
-void* malloc(size_t size)
+void* my_malloc(size_t size)
 {
   list_t* p = create_block(size);
   if (head == NULL) {
@@ -51,7 +51,7 @@ void* malloc(size_t size)
     head = p;
   } else {
     list_t* current = first_free_block();
-    fprintf(stderr, "current: %d at address: %d\n", *current, current);
+//    fprintf(stderr, "current: %d at address: %d\n", *current, current);
     p->prev = current;
     current->next = p;
   }
@@ -59,9 +59,9 @@ void* malloc(size_t size)
 }
 
 
-void* calloc(size_t size)
+void* my_calloc(size_t size)
 {
-  list_t* p = malloc(size);
+  list_t* p = my_malloc(size);
   if (p != NULL) {
     memset(p, 0, size);
   }
@@ -83,48 +83,48 @@ void print_list() {
   }
 }
 
-void* realloc(void* node, size_t size)
+void* my_realloc(void* node, size_t size)
 {
-  list_t* p = malloc(size);
+  list_t* p = my_malloc(size);
   if (p != NULL) {
     memmove(p, node, size);
-    free(node);
+    my_free(node);
   }
   return p;
 }
 
-int main(){
+//int main(){
 
-  int* test = calloc(sizeof(int));
-  fprintf(stderr, "test 1 malloc: %d at address: %d\n", *test, test);
-  fprintf(stderr, "done1\n");
-  int* test2 = calloc(sizeof(int));
-  fprintf(stderr, "test 2 malloc: %d at address: %d\n", *test2, test2);
-  fprintf(stderr, "done2\n");
-  int* test3 = calloc(sizeof(int));
-  fprintf(stderr, "done3\n");
+ // int* test = my_calloc(sizeof(int));
+  //fprintf(stderr, "test 1 malloc: %d at address: %d\n", *test, test);
+ // fprintf(stderr, "done1\n");
+ // int* test2 = my_calloc(sizeof(int));
+ // fprintf(stderr, "test 2 malloc: %d at address: %d\n", *test2, test2);
+ // fprintf(stderr, "done2\n");
+ // int* test3 = my_calloc(sizeof(int));
+  //fprintf(stderr, "done3\n");
 
 
-  *test = 123;
-  *test2 = 321;
-  *test3 = 213;
+ // *test = 123;
+ // *test2 = 321;
+ // *test3 = 213;
 
 
   //printf("test head: %d at address: %d\n", head[0], &head);
 
-  fprintf(stderr, "test 1 malloc: %d at address: %d\n", *test, test);
-  fprintf(stderr, "test 2 malloc: %d at address: %d\n", *test2, test2);
-  fprintf(stderr, "test 3 malloc: %d at address: %d\n", *test3, test3);
-  print_list();
+//  fprintf(stderr, "test 1 malloc: %d at address: %d\n", *test, test);
+//  fprintf(stderr, "test 2 malloc: %d at address: %d\n", *test2, test2);
+//  fprintf(stderr, "test 3 malloc: %d at address: %d\n", *test3, test3);
+//  print_list();
 
-  free(test2);
+ // my_free(test2);
   //int* test4 = calloc(sizeof(int));
   //*test4 = 100;
-  fprintf(stderr, "test 1 malloc: %d at address: %d\n", *test, test);
+//  fprintf(stderr, "test 1 malloc: %d at address: %d\n", *test, test);
   //printf("test 4 malloc: %d at address: %d\n", *test4, test4);
-  fprintf(stderr, "test 3 malloc: %d at address: %d\n", *test3, test3);
+ // fprintf(stderr, "test 3 malloc: %d at address: %d\n", *test3, test3);
 //  printf("test calloc: %d at address: %d\n", test2, &test2);
 
 //  test = realloc(test, 4*sizeof(int));
 //  printf("test realloc: %d at address: %d\n", test, &test);
-}
+//}
