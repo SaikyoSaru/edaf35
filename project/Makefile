@@ -11,6 +11,11 @@ linked:
 	cp memory.c gawk-3.1.8/my_alloc.c
 	make run
 
+dude:
+	make clean
+	cp dude.c gawk-3.1.8/my_alloc.c
+	make run
+
 run:
 	cd gawk-3.1.8/ && $(MAKE) clean check
 
