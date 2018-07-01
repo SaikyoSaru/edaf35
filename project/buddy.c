@@ -61,7 +61,7 @@ node_t* split(node_t* node, size_t size)
 
 node_t* merge()
 {
-
+  //TODO
 }
 
 node_t* find_free_spot(node_t* node, size_t size)
@@ -90,7 +90,7 @@ node_t* create_block(node_t* node, size_t size)
   return p;
 }
 
-void free(void* node)
+void my_free(void* node)
 {
   if (!node) {
     return;
@@ -99,7 +99,7 @@ void free(void* node)
   ((node_t*)node)->vacant = 1;
 }
 
-void* malloc(size_t size)
+void* my_malloc(size_t size)
 {
   printf("malloc\n");
   node_t* p;
@@ -117,54 +117,21 @@ void* malloc(size_t size)
 }
 
 
-void* calloc(size_t nitems, size_t size)
+void* my_calloc(size_t nitems, size_t size)
 {
-  node_t* p = malloc(nitems*size);
+  node_t* p = my_malloc(nitems*size);
   if (p != NULL) {
     memset(p, 0, nitems*size);
   }
   return p;
 }
 
-void* realloc(void* node, size_t size)
+void* my_realloc(void* node, size_t size)
 {
-  node_t* p = malloc(size);
+  node_t* p = my_malloc(size);
   if (p != NULL) {
     memmove(p, node, size);
-    free(node);
+    my_free(node);
   }
   return p;
 }
-
-//int main(){
-//
-//  int* test = calloc(sizeof(int));
-//  printf("test 1 malloc: %d at address: %d\n", *test, test);
-//  printf("done1\n");
-//  int* test2 = calloc(sizeof(int));
-//  printf("test 2 malloc: %d at address: %d\n", *test2, test2);
-//  printf("done2\n");
-//  int* test3 = calloc(sizeof(int));
-//  printf("done3\n");
-//
-//  *test = 123;
-//  *test2 = 321;
-//  *test3 = 213;
-//
-//  //printf("test head: %d at address: %d\n", head[0], &head);
-//
-//  printf("test 1 malloc: %d at address: %d\n", *test, test);
-//  printf("test 2 malloc: %d at address: %d\n", *test2, test2);
-//  printf("test 3 malloc: %d at address: %d\n", *test3, test3);
-//
-//  free(test2);
-//  int* test4 = calloc(sizeof(int));
-//  *test4 = 666;
-//  printf("test 1 malloc: %d at address: %d\n", *test, test);
-//  printf("test 4 malloc: %d at address: %d\n", *test4, test4);
-//  printf("test 3 malloc: %d at address: %d\n", *test3, test3);
-////  printf("test calloc: %d at address: %d\n", test2, &test2);
-//
-////  test = realloc(test, 4*sizeof(int));
-////  printf("test realloc: %d at address: %d\n", test, &test);
-//}

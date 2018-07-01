@@ -169,25 +169,25 @@ distcleancheck_listfiles = find . -type f -print
 
 # Directory for gawk's data files. Automake supplies datadir.
 pkgdatadir = $(datadir)/awk
-ACLOCAL = ${SHELL} /h/d2/j/elt14mka/edaf35/project/gawk-3.1.8/missing --run aclocal-1.11
-AMTAR = ${SHELL} /h/d2/j/elt14mka/edaf35/project/gawk-3.1.8/missing --run tar
-AUTOCONF = ${SHELL} /h/d2/j/elt14mka/edaf35/project/gawk-3.1.8/missing --run autoconf
-AUTOHEADER = ${SHELL} /h/d2/j/elt14mka/edaf35/project/gawk-3.1.8/missing --run autoheader
-AUTOMAKE = ${SHELL} /h/d2/j/elt14mka/edaf35/project/gawk-3.1.8/missing --run automake-1.11
+ACLOCAL = ${SHELL} /h/d8/b/elt14lpo/edaf35/project/gawk-3.1.8/missing --run aclocal-1.11
+AMTAR = ${SHELL} /h/d8/b/elt14lpo/edaf35/project/gawk-3.1.8/missing --run tar
+AUTOCONF = ${SHELL} /h/d8/b/elt14lpo/edaf35/project/gawk-3.1.8/missing --run autoconf
+AUTOHEADER = ${SHELL} /h/d8/b/elt14lpo/edaf35/project/gawk-3.1.8/missing --run autoheader
+AUTOMAKE = ${SHELL} /h/d8/b/elt14lpo/edaf35/project/gawk-3.1.8/missing --run automake-1.11
 AWK = gawk
 CC = gcc
 CCDEPMODE = depmode=gcc3
 CFLAGS = -g -O2
 CPP = gcc -E
-CPPFLAGS = 
+CPPFLAGS =
 CYGPATH_W = echo
 DEFS = -DDEFPATH=$(DEFPATH) -DHAVE_CONFIG_H -DGAWK -DLOCALEDIR='"$(datadir)/locale"'
 DEPDIR = .deps
-ECHO_C = 
+ECHO_C =
 ECHO_N = -n
-ECHO_T = 
+ECHO_T =
 EGREP = /bin/grep -E
-EXEEXT = 
+EXEEXT =
 GETTEXT_MACRO_VERSION = 0.17
 GMSGFMT = /usr/bin/msgfmt
 GMSGFMT_015 = /usr/bin/msgfmt
@@ -198,21 +198,21 @@ INSTALL_DATA = ${INSTALL} -m 644
 INSTALL_PROGRAM = ${INSTALL}
 INSTALL_SCRIPT = ${INSTALL}
 INSTALL_STRIP_PROGRAM = $(install_sh) -c -s
-INTLLIBS = 
-INTL_MACOSX_LIBS = 
+INTLLIBS =
+INTL_MACOSX_LIBS =
 LDFLAGS =  -export-dynamic
 LIBICONV = -liconv
-LIBINTL = 
-LIBOBJS = 
-LIBS = -ldl -lm -lm 
-LIBSIGSEGV = 
-LIBSIGSEGV_PREFIX = 
+LIBINTL =
+LIBOBJS =
+LIBS = -ldl -lm -lm
+LIBSIGSEGV =
+LIBSIGSEGV_PREFIX =
 LN_S = ln -s
 LTLIBICONV = -liconv
-LTLIBINTL = 
-LTLIBOBJS = 
-LTLIBSIGSEGV = 
-MAKEINFO = ${SHELL} /h/d2/j/elt14mka/edaf35/project/gawk-3.1.8/missing --run makeinfo
+LTLIBINTL =
+LTLIBOBJS =
+LTLIBSIGSEGV =
+MAKEINFO = ${SHELL} /h/d8/b/elt14lpo/edaf35/project/gawk-3.1.8/missing --run makeinfo
 MKDIR_P = /bin/mkdir -p
 MSGFMT = /usr/bin/msgfmt
 MSGFMT_015 = /usr/bin/msgfmt
@@ -227,31 +227,31 @@ PACKAGE_URL = http://www.gnu.org/software/gawk/
 PACKAGE_VERSION = 3.1.8
 PATH_SEPARATOR = :
 POSUB = po
-SET_MAKE = 
+SET_MAKE =
 SHELL = /bin/bash
-SOCKET_LIBS = 
-STRIP = 
-U = 
+SOCKET_LIBS =
+STRIP =
+U =
 USE_NLS = yes
 VERSION = 3.1.8
 XGETTEXT = /usr/bin/xgettext
 XGETTEXT_015 = /usr/bin/xgettext
-XGETTEXT_EXTRA_OPTIONS = 
+XGETTEXT_EXTRA_OPTIONS =
 YACC = bison -y
-YFLAGS = 
-abs_builddir = /h/d2/j/elt14mka/edaf35/project/gawk-3.1.8
-abs_srcdir = /h/d2/j/elt14mka/edaf35/project/gawk-3.1.8
-abs_top_builddir = /h/d2/j/elt14mka/edaf35/project/gawk-3.1.8
-abs_top_srcdir = /h/d2/j/elt14mka/edaf35/project/gawk-3.1.8
+YFLAGS =
+abs_builddir = /h/d8/b/elt14lpo/edaf35/project/gawk-3.1.8
+abs_srcdir = /h/d8/b/elt14lpo/edaf35/project/gawk-3.1.8
+abs_top_builddir = /h/d8/b/elt14lpo/edaf35/project/gawk-3.1.8
+abs_top_srcdir = /h/d8/b/elt14lpo/edaf35/project/gawk-3.1.8
 ac_ct_CC = gcc
 am__include = include
 am__leading_dot = .
-am__quote = 
+am__quote =
 am__tar = ${AMTAR} chof - "$$tardir"
 am__untar = ${AMTAR} xf -
 bindir = ${exec_prefix}/bin
 build = x86_64-unknown-linux-gnu
-build_alias = 
+build_alias =
 build_cpu = x86_64
 build_os = linux-gnu
 build_vendor = unknown
@@ -262,14 +262,14 @@ docdir = ${datarootdir}/doc/${PACKAGE_TARNAME}
 dvidir = ${docdir}
 exec_prefix = ${prefix}
 host = x86_64-unknown-linux-gnu
-host_alias = 
+host_alias =
 host_cpu = x86_64
 host_os = linux-gnu
 host_vendor = unknown
 htmldir = ${docdir}
 includedir = ${prefix}/include
 infodir = ${datarootdir}/info
-install_sh = ${SHELL} /h/d2/j/elt14mka/edaf35/project/gawk-3.1.8/install-sh
+install_sh = ${SHELL} /h/d8/b/elt14lpo/edaf35/project/gawk-3.1.8/install-sh
 libdir = ${exec_prefix}/lib
 libexecdir = ${exec_prefix}/libexec
 localedir = ${datarootdir}/locale
@@ -285,8 +285,8 @@ sbindir = ${exec_prefix}/sbin
 sharedstatedir = ${prefix}/com
 srcdir = .
 sysconfdir = ${prefix}/etc
-target_alias = 
-top_build_prefix = 
+target_alias =
+top_build_prefix =
 top_builddir = .
 top_srcdir = .
 
@@ -443,7 +443,7 @@ config.h: stamp-h1
 stamp-h1: $(srcdir)/configh.in $(top_builddir)/config.status
 	@rm -f stamp-h1
 	cd $(top_builddir) && $(SHELL) ./config.status config.h
-$(srcdir)/configh.in:  $(am__configure_deps) 
+$(srcdir)/configh.in:  $(am__configure_deps)
 	($(am__cd) $(top_srcdir) && $(AUTOHEADER))
 	rm -f stamp-h1
 	touch $@
@@ -487,10 +487,10 @@ uninstall-binPROGRAMS:
 
 clean-binPROGRAMS:
 	-test -z "$(bin_PROGRAMS)" || rm -f $(bin_PROGRAMS)
-gawk$(EXEEXT): $(gawk_OBJECTS) $(gawk_DEPENDENCIES) 
+gawk$(EXEEXT): $(gawk_OBJECTS) $(gawk_DEPENDENCIES)
 	@rm -f gawk$(EXEEXT)
 	$(LINK) $(gawk_OBJECTS) $(gawk_LDADD) $(LIBS)
-pgawk$(EXEEXT): $(pgawk_OBJECTS) $(pgawk_DEPENDENCIES) 
+pgawk$(EXEEXT): $(pgawk_OBJECTS) $(pgawk_DEPENDENCIES)
 	@rm -f pgawk$(EXEEXT)
 	$(LINK) $(pgawk_OBJECTS) $(pgawk_LDADD) $(LIBS)
 

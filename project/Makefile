@@ -8,12 +8,7 @@ buddy:
 
 linked:
 	make clean
-	cp memory.c gawk-3.1.8/my_alloc.c
-	make run
-
-dude:
-	make clean
-	cp dude.c gawk-3.1.8/my_alloc.c
+	cp linked.c gawk-3.1.8/my_alloc.c
 	make run
 
 run:

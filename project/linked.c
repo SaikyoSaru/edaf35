@@ -69,7 +69,7 @@ list_t *create_block(list_t *tail, size_t size) {
   return new_block;
 }
 
-void free(void *node) {
+void my_free(void *node) {
   if (!node) {
     return;
   }
@@ -78,7 +78,7 @@ void free(void *node) {
   merge_list();
 }
 
-void *malloc(size_t size) {
+void *my_malloc(size_t size) {
   list_t *p;
   if (!head) {
     p = create_block(NULL, size);
@@ -102,41 +102,19 @@ void *malloc(size_t size) {
   return p + 1;
 }
 
-void *calloc(size_t size) {
-  list_t *p = malloc(size);
+void *my_calloc(size_t size) {
+  list_t *p = my_malloc(size);
   if (p != NULL) {
     memset(p, 0, size);
   }
   return p;
 }
 
-void *realloc(void *node, size_t size) {
-  list_t *p = malloc(size);
+void *my_realloc(void *node, size_t size) {
+  list_t *p = my_malloc(size);
   if (p != NULL) {
     memmove(p, node, size);
-    free(node);
+    my_free(node);
   }
   return p;
-}
-
-int main() {
-
-  int *test = malloc(sizeof(int));
-  int *test2 = malloc(sizeof(int));
-  int *test3 = malloc(sizeof(int));
-
-  *test = 123;
-  *test2 = 121;
-  *test3 = 213;
-  print_list();
-  // fprintf(stderr, "test head: %d at address: %d\n", head[0], &head);
-
-  free(test2);
-  print_list();
-  free(test3);
-  fprintf(stderr, "after merging list\n");
-  print_list();
-  int *test4 = calloc(sizeof(int));
-  *test4 = 666;
-  print_list();
 }
