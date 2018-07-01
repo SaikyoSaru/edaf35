@@ -102,10 +102,10 @@ void *my_malloc(size_t size) {
   return p + 1;
 }
 
-void *my_calloc(size_t size) {
-  list_t *p = my_malloc(size);
+void *my_calloc(size_t nitems, size_t size) {
+  list_t *p = my_malloc(nitems*size);
   if (p != NULL) {
-    memset(p, 0, size);
+    memset(p, 0, nitems*size);
   }
   return p;
 }
