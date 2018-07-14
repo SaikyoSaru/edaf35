@@ -71,7 +71,6 @@ void free(void *ptr) {
 
 void *malloc(size_t size) {
   list_t *p;
-  // TODO: align size?
   if (size <= 0) {
     return NULL;
   }
