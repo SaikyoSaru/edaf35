@@ -23,6 +23,7 @@ magic:
 lazy_linked:
 	make clean
 	make cp_linked
+	make gcc
 	make configure
 	make check
 	make magic
@@ -31,6 +32,7 @@ lazy_linked:
 lazy_buddy:
 	make clean
 	make cp_buddy
+	make gcc
 	make configure
 	make check
 	make magic
