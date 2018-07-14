@@ -1,21 +1,19 @@
-# Makefile for edaf35 project
-# Run make followed by either "buddy" or "linked" to run
-
-buddy:
-	make clean
-	cp buddy.c gawk-3.1.8/my_alloc.c
-	make run
+configure:
+	cd gawk-3.1.8/ && ./configure
+	cd gawk-3.1.8/ && $(MAKE) check
 
 linked:
-	make clean
-	cp linked.c gawk-3.1.8/my_alloc.c
-	make run
+	cd linked/ &&	$(MAKE) clean
+	cd linked/ &&	$(MAKE) all
+
+buddy:
+	cd buddy/ && $(MAKE) clean
+	cd buddy/ &&	$(MAKE) all
 
 run:
-	cd gawk-3.1.8/ && $(MAKE) clean check
+	cd gawk-3.1.8/ && $(MAKE) check
 
 clean:
-	rm -f *.o
-	rm -f *.exe
-	rm -f *.out
-	rm -f gawk-3.1.8/my_alloc.c
+	cd linked/ &&	$(MAKE) clean
+	cd buddy/ && $(MAKE) clean
+	rm -f gawk-3.1.8/malloc.*
