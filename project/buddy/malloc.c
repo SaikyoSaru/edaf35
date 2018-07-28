@@ -2,9 +2,12 @@
 #include <unistd.h>
 #include <stdbool.h>
 #include <string.h>
+#include "malloc.h"
+#include <math.h>
+
 
 typedef struct node_t node_t;
-#define INIT_SIZE 32
+#define INIT_SIZE 512
 
 void* root = NULL;
 
@@ -19,7 +22,7 @@ void* init(size_t size)
 {
   printf("Init\n");
   node_t* p = sbrk(0);
-  void* req = sbrk(size + sizeof(node_t));
+  void* req = sbrk(2*size + sizeof(node_t));
   if (!req) {
     return NULL;
   }
@@ -101,18 +104,27 @@ void free(void* node)
 
 void* malloc(size_t size)
 {
-  printf("malloc\n");
+  /*
+  * Allocate in power of 2
+  * Our node_t is 32 bytes
+  */
+  printf("malloc, desired size:%zu\n", size);
+  int n = (int)ceil(log2(size + sizeof(node_t)));
+  printf("node_t size: %d\n", sizeof(node_t));
+  printf("order of 2: %d\n", n);
+  int alloc_size = 2 << n-1;
+  printf("alloc size:%d\n", alloc_size);
+
   node_t* p;
   if (!root) {
     root = init(INIT_SIZE);
-  } else {
-    p = create_block(root, size);
-    if (!p) {
-      printf ("NULL");
-      return NULL;
-    }
-    p->vacant = 1;
   }
+  p = create_block(root, size);
+  if (!p) {
+    printf ("NULL");
+    return NULL;
+  }
+  p->vacant = 1;
   return p+1;
 }
 
