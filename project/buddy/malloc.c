@@ -48,25 +48,37 @@ node_t* split(node_t* node, size_t size)
 {
   printf("split\n");
   if (node->size / 2 < size) {
-    printf ("split done\n");
+    printf ("split done, size of block:%d\n", node->size );
     return node;
   } else {
-    printf ("left\n");
+    printf ("create left\n");
     node->left = create_node(node, (node->size)/2);
     if (!node->left ) {
       printf("aiuds\n");
     }
-    printf("right\n");
+    printf("create right\n");
     node->right = create_node(node + (node->size)/2, (node->size)/2);
     return split(node->left, size);
   }
 }
-
-node_t* merge()
+/*
+* merge two adjacent blocks
+*/
+node_t* merge_buddies(node_t* left, node_t* right)
 {
-  //TODO
+  left->vacant = 1;
+  left->size += right->size;
+  left->right = right->right;
+  if (right->right != NULL) {
+    right->right->left = left;
+  }
+  return left;
 }
 
+node_t* merge(node_t * node)
+{
+  return NULL;
+}
 node_t* find_free_spot(node_t* node, size_t size)
 {
   printf("find free spot\n");
@@ -112,14 +124,14 @@ void* malloc(size_t size)
   int n = (int)ceil(log2(size + sizeof(node_t)));
   printf("node_t size: %d\n", sizeof(node_t));
   printf("order of 2: %d\n", n);
-  int alloc_size = 2 << n-1;
+  int alloc_size = 2 << (n-1);
   printf("alloc size:%d\n", alloc_size);
 
   node_t* p;
   if (!root) {
     root = init(INIT_SIZE);
   }
-  p = create_block(root, size);
+  p = create_block(root, alloc_size);
   if (!p) {
     printf ("NULL");
     return NULL;
