@@ -77,17 +77,24 @@ void merge_buddies(node_t* left, node_t* right)
 
 void merge(node_t * node)
 {
-  if (node == NULL || node->vacant) {
+  if (node == NULL) {
+    printf("NODE IS NULL");
+    return;
+  } else if (node->vacant) {
+    printf("NODE IS VACANT");
     return;
   }
 
   if (node->left != NULL) {
+    printf("LEFT NODE IS NOT NULL");
     merge(node->left);
   }
   if (node->right != NULL) {
+    printf("RIGHT NODE IS NOT NULL");
     merge(node->right);
   }
   if (node->left->vacant && node->right->vacant) {
+    printf("MERGING");
     merge_buddies(node->left, node->right);
   }
 }
@@ -124,7 +131,7 @@ void free(void* node)
   if (!node) {
     return;
   }
-  merge(node);
+  merge(root);
   // ((node_t*)node)->vacant = 1;
 }
 
@@ -135,7 +142,8 @@ void* malloc(size_t size)
   * Our node_t is 32 bytes
   */
   printf("malloc, desired size:%zu\n", size);
-  int n = (int)ceil(log2(size + sizeof(node_t)));
+  int n = log(sizeof(node_t)) / log(2);
+  //int n = (int)ceil(log2(size + sizeof(node_t)));
   printf("node_t size: %d\n", sizeof(node_t));
   printf("order of 2: %d\n", n);
   int alloc_size = 2 << (n-1);
