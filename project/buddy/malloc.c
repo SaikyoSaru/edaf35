@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <unistd.h>
+#include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
 #include "malloc.h"
@@ -64,7 +65,7 @@ node_t* split(node_t* node, size_t size)
 /*
 * merge two adjacent blocks
 */
-node_t* merge_buddies(node_t* left, node_t* right)
+void merge_buddies(node_t* left, node_t* right)
 {
   left->vacant = 1;
   left->size += right->size;
@@ -72,13 +73,26 @@ node_t* merge_buddies(node_t* left, node_t* right)
   if (right->right != NULL) {
     right->right->left = left;
   }
-  return left;
 }
 
-node_t* merge(node_t * node)
+void merge(node_t * node)
 {
-  return NULL;
+  if (node == NULL || node->vacant) {
+    return;
+  }
+
+  if (node->left != NULL) {
+    merge(node->left);
+  }
+  if (node->right != NULL) {
+    merge(node->right);
+  }
+  if (node->left->vacant && node->right->vacant) {
+    merge_buddies(node->left, node->right);
+  }
 }
+
+
 node_t* find_free_spot(node_t* node, size_t size)
 {
   printf("find free spot\n");
@@ -111,7 +125,7 @@ void free(void* node)
     return;
   }
   merge(node);
-  ((node_t*)node)->vacant = 1;
+  // ((node_t*)node)->vacant = 1;
 }
 
 void* malloc(size_t size)
