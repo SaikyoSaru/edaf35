@@ -8,7 +8,6 @@
 #include "list.h"
 
 
-typedef struct node_t node_t;
 #define INIT_SIZE 2048
 
 void* heap;
@@ -17,17 +16,7 @@ node_t* freelist[8];
 
 void split(int high_level, int low_level);
 
-
-
-
-void* root = NULL;
-
-struct node_t {
-  node_t* left;
-  node_t* right;
-  size_t size;
-  int vacant;
-};
+// void* root = NULL;
 
 /*
 *Returns the level
@@ -54,6 +43,17 @@ int get_level(int size) {
 }
 
 
+node_t* create_node(node_t* node, size_t size)
+{
+  printf ("create node\n");
+  node->pre = NULL;
+  node->succ = NULL;
+  node->vacant = 1;
+  node->size = size;
+  printf("size of node:%zu\n", size);
+  return node;
+}
+
 void init()
 {
   for (size_t i = 0; i<8; i++) {
@@ -66,24 +66,14 @@ void init()
     return;
   }
 
-  node_t* p = (node_*t) heap;
+  node_t* p = (node_t*) heap;
   p = create_node(p, INIT_SIZE);
   freelist[7] = p;
   // return p;
 }
 
-node_t* create_node(node_t* node, size_t size)
-{
-  printf ("create node\n");
-  node->left = NULL;
-  node->right = NULL;
-  node->vacant = 1;
-  node->size = size;
-  printf("size of node:%zu\n", size);
-  return node;
-}
 /*
-*splits until the right size is found
+*splits until the succ size is found
 */
 void split(int high_level, int low_level)
 {
@@ -96,8 +86,8 @@ void split(int high_level, int low_level)
     node_t* new_node = (node_t*)((char*)node + node->size);
     new_node->size = node->size;
     new_node->vacant = 1;
-    new_node->left = node;
-    new_node->right = NULL;
+    new_node->pre = node;
+    new_node->succ = NULL;
     add_last(freelist, i-1, node);
     add_last(freelist, i-1, new_node);
   }
@@ -105,14 +95,14 @@ void split(int high_level, int low_level)
 /*
 * merge two adjacent blocks
 */
-void merge_buddies(node_t* left, node_t* right)
+void merge_buddies(node_t* pre, node_t* succ)
 {
-  left->vacant = 1;
-  left->size += right->size;
-  left->right = right->right;
+  pre->vacant = 1;
+  pre->size += succ->size;
+  pre->succ = succ->succ;
 
-  if (right->right != NULL) {
-    right->right->left = left;
+  if (succ->succ != NULL) {
+    succ->succ->pre = pre;
   }
 }
 
@@ -126,60 +116,28 @@ void merge(node_t * node)
     return;
   }
 
-  if (node->left != NULL && node->left->vacant) {
-    printf("LEFT NODE IS NOT NULL\n");
-    merge(node->left);
+  if (node->pre != NULL && node->pre->vacant) {
+    printf("pre NODE IS NOT NULL\n");
+    merge(node->pre);
   }
-  if (node->right != NULL && node->right->vacant) {
-    printf("RIGHT NODE IS NOT NULL\n");
-    merge(node->right);
+  if (node->succ != NULL && node->succ->vacant) {
+    printf("succ NODE IS NOT NULL\n");
+    merge(node->succ);
   }
-  if (node->left->vacant && node->right->vacant) {
+  if (node->pre->vacant && node->succ->vacant) {
     printf("MERGING\n");
-    merge_buddies(node->left, node->right);
+    merge_buddies(node->pre, node->succ);
   }
-}
-
-
-node_t* find_free_spot(node_t* node, size_t size)
-{
-  printf("find free spot\n");
-  if (node->vacant && node->size >= size) {
-    printf("Found VACANT\n");
-    return node;
-  }
-  printf("node: %d vacant: %d\n", size, node->vacant);
-  if (node->left != NULL && node->left->size >= size) {
-    printf("FIND LEFT NODE");
-    return find_free_spot(node->left, size);
-  }
-  if (node->right != NULL && node->right->size >= size){
-    printf("FIND RIGHT NODE");
-    return find_free_spot(node->right, size);
-  }
-  // printf("FAIL to find free spot\n");
-  return NULL;
-}
-
-node_t* create_block(node_t* node, size_t size)
-{
-  printf("create block\n");
-  node_t* p = find_free_spot(root, size);
-  if (!p) {
-    return NULL;
-  }
-  p = split(p, size);
-  p->vacant = 0;
-  return p;
 }
 
 void free(void* node)
 {
+  print("free");
+  node-=1;
   if (!node) {
     return;
   }
-  merge(root);
-  // ((node_t*)node)->vacant = 1;
+
 }
 
 void* malloc(size_t size)
@@ -188,23 +146,22 @@ void* malloc(size_t size)
   * Allocate in power of 2
   * Our node_t is 32 bytes
   */
-  if (s > INIT_SIZE) {
+  if (size > INIT_SIZE) {
     return NULL;
   }
-  // printf("malloc, desired size:%zu\n", size);
+  printf("malloc, desired size:%zu\n", size);
   // int n = log(sizeof(node_t)) / log(2);
   int n = (int)ceil(log2(size + sizeof(node_t)));
   // printf("node_t size: %d\n", sizeof(node_t));
   // printf("order of 2: %d\n", n);
   int alloc_size = 2 << (n-1);
   // printf("alloc size:%d\n", alloc_size);
-
   node_t* p;
   if (!heap) {
     init();
   }
 
-  level = get_level(alloc_size);
+  int level = get_level(alloc_size);
 
   if (freelist[level] != NULL) {
     node_t* node = pop_list(freelist, level);
@@ -218,21 +175,22 @@ void* malloc(size_t size)
         break;
       }
     }
+    if (closest_free_level) {
     split(closest_free_level, level);
 
-  } else {
-    //Add on new memory
-     void* p = (node_t*) sbrk(0);
-     void* req = sbrk(INIT_SIZE);
-     if (!req) {
-       printf("out of memory!!");
-       return NULL;
-     }
-     p = create_node(p, INIT_SIZE);
-     freelist[7] = p;
-     split(7, level);
+    } else {
+      //Add on new memory
+       void* p = (node_t*) sbrk(0);
+       void* req = sbrk(INIT_SIZE);
+       if (!req) {
+         printf("out of memory!!");
+         return NULL;
+       }
+       p = create_node(p, INIT_SIZE);
+       freelist[7] = p;
+       split(7, level);
+    }
   }
-
   node_t* node = pop_list(freelist, level);
   node->vacant = 0;
   return node+1;
@@ -256,4 +214,27 @@ void* realloc(void* node, size_t size)
     free(node);
   }
   return p;
+}
+
+int main(int argc, char const *argv[]) {
+  // printf("size: %zu\n", sizeof(int) + sizeof(node_t));
+  int* a = malloc(2*sizeof(int));
+  // printf("tester:%zu\n", a[]);
+  a[0] = 42;
+  a[1] = 15;
+  printf("a val: %d address:%zu, pointer val: %zu\n", *a, &a, a);
+  a += 1;
+  printf("a val: %d address:%zu, pointer val: %zu\n", *a, &a, a);
+  int* b = calloc(1, sizeof(int));
+  *b = 1337;
+  printf("b val: %d address:%zu, pointer val: %zu\n", *b, &b, b);
+  free(b);
+  int* b2 = calloc(1, sizeof(int));
+  *b2 = 420;
+  printf("b val: %d address:%zu, pointer val: %zu\n", *b2, &b2, b2);
+  a -= 1;
+  free(a);
+
+
+
 }

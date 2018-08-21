@@ -1,3 +1,6 @@
+#ifndef _MALLOC_H
+#define _MALLOC_H
+
 #include <stdio.h>
 
 void *realloc(void *ptr, size_t size);
@@ -13,3 +16,5 @@ struct node_t {
   size_t size;
   int vacant;
 };
+
+#endif

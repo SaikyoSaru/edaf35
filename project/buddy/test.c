@@ -1,11 +1,12 @@
 #include "malloc.h"
+#include "malloc.c"
 
 
 
 
 
 int main(int argc, char const *argv[]) {
-  printf("size: %zu\n", sizeof(int) + sizeof(node_t));
+  // printf("size: %zu\n", sizeof(int) + sizeof(node_t));
   int* a = malloc(2*sizeof(int));
   // printf("tester:%zu\n", a[]);
   a[0] = 42;
