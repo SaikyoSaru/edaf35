@@ -42,6 +42,7 @@ node_t* create_node(node_t* node, size_t size)
   node->right = NULL;
   node->vacant = 1;
   node->size = size;
+  printf("size of node:%zu\n", size);
   return node;
 }
 
@@ -52,13 +53,14 @@ node_t* split(node_t* node, size_t size)
     printf ("split done, size of block:%d\n", node->size );
     return node;
   } else {
+    node->vacant = 0;
     printf ("create left\n");
     node->left = create_node(node, (node->size)/2);
     if (!node->left ) {
       printf("aiuds\n");
     }
     printf("create right\n");
-    node->right = create_node(node + (node->size)/2, (node->size)/2);
+    node->right = create_node(node + (node->size), (node->size));
     return split(node->left, size);
   }
 }
@@ -78,23 +80,23 @@ void merge_buddies(node_t* left, node_t* right)
 void merge(node_t * node)
 {
   if (node == NULL) {
-    printf("NODE IS NULL");
+    printf("NODE IS NULL\n");
     return;
   } else if (node->vacant) {
-    printf("NODE IS VACANT");
+    printf("NODE IS VACANT\n: %d", node->vacant);
     return;
   }
 
-  if (node->left != NULL) {
-    printf("LEFT NODE IS NOT NULL");
+  if (node->left != NULL && node->left->vacant) {
+    printf("LEFT NODE IS NOT NULL\n");
     merge(node->left);
   }
-  if (node->right != NULL) {
-    printf("RIGHT NODE IS NOT NULL");
+  if (node->right != NULL && node->right->vacant) {
+    printf("RIGHT NODE IS NOT NULL\n");
     merge(node->right);
   }
   if (node->left->vacant && node->right->vacant) {
-    printf("MERGING");
+    printf("MERGING\n");
     merge_buddies(node->left, node->right);
   }
 }
@@ -104,20 +106,26 @@ node_t* find_free_spot(node_t* node, size_t size)
 {
   printf("find free spot\n");
   if (node->vacant && node->size >= size) {
+    printf("Found VACANT\n");
     return node;
   }
-  if (!node->left && node->left->size >= size && node->left->vacant) {
+  printf("node: %d vacant: %d\n", size, node->vacant);
+  if (node->left != NULL && node->left->size >= size) {
+    printf("FIND LEFT NODE");
     return find_free_spot(node->left, size);
-  } else if (!node->right && node->right->vacant){
+  }
+  if (node->right != NULL && node->right->size >= size){
+    printf("FIND RIGHT NODE");
     return find_free_spot(node->right, size);
   }
+  // printf("FAIL to find free spot\n");
   return NULL;
 }
 
 node_t* create_block(node_t* node, size_t size)
 {
   printf("create block\n");
-  node_t* p = find_free_spot(node, size);
+  node_t* p = find_free_spot(root, size);
   if (!p) {
     return NULL;
   }
@@ -142,8 +150,8 @@ void* malloc(size_t size)
   * Our node_t is 32 bytes
   */
   printf("malloc, desired size:%zu\n", size);
-  int n = log(sizeof(node_t)) / log(2);
-  //int n = (int)ceil(log2(size + sizeof(node_t)));
+  // int n = log(sizeof(node_t)) / log(2);
+  int n = (int)ceil(log2(size + sizeof(node_t)));
   printf("node_t size: %d\n", sizeof(node_t));
   printf("order of 2: %d\n", n);
   int alloc_size = 2 << (n-1);
@@ -158,7 +166,6 @@ void* malloc(size_t size)
     printf ("NULL");
     return NULL;
   }
-  p->vacant = 1;
   return p+1;
 }
 
