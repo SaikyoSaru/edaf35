@@ -1,15 +1,19 @@
-
+#include "list.h"
 
 
 node_t* pop_list(node_t** freelist, int level) {
   node_t* p = freelist[level];
-  freelist[level] = p->next;
-
-  if ((node_t*)freelist[level] !=NULL ) {
-    (node_t*)freelist[level]->left = NULL;
+  if (p->succ != NULL) {
+    freelist[level] = p->succ;
+  } else {
+    freelist[level] = NULL;
   }
-  p->left = NULL;
-  p->right = NULL;
+
+  if ((node_t*)freelist[level] != NULL ) {
+    ((node_t*)freelist[level])->pre = NULL;
+  }
+  p->pre = NULL;
+  p->succ = NULL;
   return p;
 }
 
@@ -22,30 +26,30 @@ node_t* add_last(node_t** freelist, int level, node_t* node) {
 
   if (p == NULL) {
     freelist[level] = node;
-    node->left = NULL;
+    node->pre = NULL;
   } else {
     node_t* q = p;
-    while (q->next != NULL) {
-      q = q->right;
+    while (q->succ != NULL) {
+      q = q->succ;
     }
-    q->next = node;
-    node->left = q;
+    q->succ = node;
+    node->pre = q;
   }
-  node->right = NULL;
+  node->succ = NULL;
   return node;
 }
 
 node_t* remove_node(node_t** freelist, int level, node_t* node) {
-  if (node->left == NULL && node->right==NULL) {
+  if (node->pre == NULL && node->succ==NULL) {
     freelist[level] = NULL;
-  } else if (node->left == NULL) {
-    freelist[level] = node->next;
-    node->next->prev = NULL;
-  } else if (node->right = NULL) {
-    node->left->right = NULL;
+  } else if (node->pre == NULL) {
+    freelist[level] = node->succ;
+    node->succ->pre = NULL;
+  } else if (node->succ == NULL) {
+    node->pre->succ = NULL;
   } else {
-    node->left->right = node->rigth;
-    node->right->left = node->left;
+    node->pre->succ = node->succ;
+    node->succ->pre = node->pre;
   }
-  return node:
+  return node;
 }

@@ -1,5 +1,5 @@
-#ifndef _MALLOC_H
-#define _MALLOC_H
+#ifndef __MALLOC_H__
+#define __MALLOC_H__
 
 #include <stdio.h>
 
@@ -11,10 +11,17 @@ void free(void* ptr);
 typedef struct node_t node_t;
 
 struct node_t {
-  node_t* pre;
-  node_t* succ;
-  size_t size;
-  int vacant;
+  int level;
+  node_t* next;
 };
+
+// typedef struct node_t node_t;
+//
+// struct node_t {
+//   node_t* pre;
+//   node_t* succ;
+//   size_t size;
+//   int vacant;
+// };
 
 #endif
