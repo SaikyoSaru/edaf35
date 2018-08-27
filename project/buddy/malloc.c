@@ -5,8 +5,6 @@
 #include <string.h>
 #include "malloc.h"
 #include <math.h>
-// #include "list.h"
-
 
 #define INIT_SIZE 2048 //consideration use pow?
 #define MAX_LEVEL 7
@@ -16,8 +14,6 @@ void* heap;
 node_t* freelist[8];
 
 node_t* split(int high_level, int low_level);
-
-// void* root = NULL;
 
 /*
 *Returns the level
@@ -43,18 +39,6 @@ int get_level(int size) {
   }
 }
 
-
-// void create_node(node_t* node, size_t size)
-// {
-//   printf ("create node\n");
-//   node->pre = NULL;
-//   node->succ = NULL;
-//   node->vacant = 1;
-//   node->size = size;
-//   printf("size of node:%zu\n", size);
-//
-// }
-
 void init()
 {
   for (size_t i = 0; i<8; i++) {
@@ -71,10 +55,8 @@ void init()
   node_t* p = (node_t*) heap;
   p->level = MAX_LEVEL;
   p->next = NULL;
-  // create_node(p, INIT_SIZE);
   fprintf(stderr, "init level %d\n", p->level);
   freelist[MAX_LEVEL] = p;
-  // return p;
 }
 
 void insert(node_t* node)
@@ -110,9 +92,6 @@ void insert(node_t* node)
 node_t* pop(int level)
 {
   node_t* p = freelist[level];
-  // if (p == NULL) {
-  //   return NULL;
-  // }
   if (p->next == NULL) {
     freelist[level] = NULL;
   } else {
@@ -130,7 +109,6 @@ node_t* split(int high_level, int low_level)
   node_t* node = NULL;
   node = pop(high_level);
   for (size_t i = high_level; i > low_level; i--) {
-    // node_t* node = pop_list(freelist, i);
     size_t size = pow(2, i+4-1);
     fprintf(stderr, "size: %d\n", size);
     fprintf(stderr, "level: %d\n", node->level-1);
@@ -194,10 +172,7 @@ void* malloc(size_t size)
     return NULL;
   }
   printf("malloc, desired size:%zu\n", size);
-  // int n = log(sizeof(node_t)) / log(2);
   int n = (int)ceil(log2(size + sizeof(node_t)));
-  // printf("node_t size: %d\n", sizeof(node_t));
-  // printf("order of 2: %d\n", n);
   int alloc_size = 2 << (n-1);
   printf("alloc size:%d\n", alloc_size);
   node_t* p;
@@ -215,7 +190,6 @@ void* malloc(size_t size)
     fprintf(stderr, "Get directly\n");
   } else {
     fprintf(stderr, "Split på g\n");
-    // closest_free_level = -1;
     for (size_t i = level + 1; i < 8; i++) {
       if(freelist[i] != NULL) {
         closest_free_level = i;
@@ -232,18 +206,13 @@ void* malloc(size_t size)
          printf("out of memory!!\n");
          return NULL;
        }
-       // create_node(p, INIT_SIZE);
        p->level = MAX_LEVEL;
        p->next = NULL;
        freelist[MAX_LEVEL] = p;
        closest_free_level = MAX_LEVEL;
     }
     node = split(closest_free_level, level);
-
   }
-  // node_t* node = pop_list(freelist, level);
-  // node->vacant = 0;
-  // node_t* node = freelist[level];
   return (node+1);
 }
 

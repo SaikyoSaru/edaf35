@@ -15,13 +15,4 @@ struct node_t {
   node_t* next;
 };
 
-// typedef struct node_t node_t;
-//
-// struct node_t {
-//   node_t* pre;
-//   node_t* succ;
-//   size_t size;
-//   int vacant;
-// };
-
 #endif

@@ -17,7 +17,7 @@ struct list_t {
   int vacant;
 };
 
-/*void merge_list() {
+void merge_list() {
   list_t *p, *q;
   p = head;
   if (!head) {
@@ -33,7 +33,7 @@ struct list_t {
       p = p->next;
     }
   }
-}*/
+}
 
 list_t *first_free_block(list_t **last, size_t size) {
   list_t *p = head;
@@ -66,7 +66,7 @@ void free(void *ptr) {
   }
   list_t *p = (list_t *) ptr - 1;
   p->vacant = 1;
-  //merge_list();
+  merge_list();
 }
 
 void *malloc(size_t size) {
