@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
-#include "malloc.h"
+#include "my_malloc.h"
 #include <math.h>
 
 #define META_SIZE sizeof(node_t)
