@@ -2,10 +2,10 @@ configure:
 	cd gawk-3.1.8/ && ./configure
 
 cp_linked:
-	cp linked/malloc.* gawk-3.1.8/
+	cp linked/my_malloc.* gawk-3.1.8/
 
 cp_buddy:
-	cp buddy/malloc.* gawk-3.1.8/
+	cp buddy/my_malloc.* gawk-3.1.8/
 
 
 gcc: gawk-3.1.8/malloc.o
@@ -19,6 +19,9 @@ clean:
 
 magic:
 	bash edit.sh
+
+com:
+	cd gawk-3.1.8/ && echo > .deps/my_malloc.Po
 
 lazy_linked:
 	make clean
@@ -36,4 +39,20 @@ lazy_buddy:
 	make configure
 	make check
 	make magic
+	make check
+
+correct_linked:
+	make clean
+	make configure
+	make cp_linked
+	make magic
+	make com
+	make check
+
+correct_buddy:
+	make clean
+	make configure
+	make cp_buddy
+	make magic
+	make com
 	make check
