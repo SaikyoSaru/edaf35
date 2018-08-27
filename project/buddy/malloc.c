@@ -64,6 +64,7 @@ void init()
   heap = sbrk(0);
   void* req = sbrk(INIT_SIZE);
   if (!req) {
+    fprintf(stderr, "FUUUUCK\n");
     return;
   }
 
@@ -71,27 +72,54 @@ void init()
   p->level = MAX_LEVEL;
   p->next = NULL;
   // create_node(p, INIT_SIZE);
-  printf("%p", p);
+  fprintf(stderr, "init level %d\n", p->level);
   freelist[MAX_LEVEL] = p;
   // return p;
 }
 
-void insert(node_t* node, int level) {
+void insert(node_t* node)
+{
+  int level = node->level;
   node_t* p = freelist[level];
   node_t* q;
-  if (!p) {
-    while (!p->next) {
-      if (&p < &p->next) {
-        q = p;
-        p = p->next;
+  if (p) {
+    if (&node < &p) {
+      node->next = p;
+      freelist[level] = node;
+    } else if (!p->next) {
+      p->next = node;
+    } else {
+      while (p->next) {
+        if (&node > &p->next) {
+          q = p;
+          p = p->next;
+        } else {
+          q->next = node;
+          node->next = p;
+          break;
+        }
       }
     }
-    q->next = node;
-    node->next = p;
+  } else {
+    freelist[level] = node;
+    fprintf(stderr, "YESSSSSS: %d\n", level);
   }
-  freelist[level] = node;
   return;
+}
 
+node_t* pop(int level)
+{
+  node_t* p = freelist[level];
+  // if (p == NULL) {
+  //   return NULL;
+  // }
+  if (p->next == NULL) {
+    freelist[level] = NULL;
+  } else {
+    freelist[level] = p->next;
+  }
+  p->next = NULL;
+  return p;
 }
 
 /*
@@ -100,59 +128,60 @@ void insert(node_t* node, int level) {
 node_t* split(int high_level, int low_level)
 {
   node_t* node = NULL;
+  node = pop(high_level);
   for (size_t i = high_level; i > low_level; i--) {
     // node_t* node = pop_list(freelist, i);
-    node = freelist[i]->node;
-    if (!freelist[i]->node->next) {
-        freelist[i] = NULL;
-    } else {
-      freelist[i]->node = freelist[i]->node->next;
-    }
-
-    // node->size/=2;
-    size_t size = pow(2, i-1);
-
+    size_t size = pow(2, i+4-1);
+    fprintf(stderr, "size: %d\n", size);
+    fprintf(stderr, "level: %d\n", node->level-1);
+    usleep(1000000);
     node_t* new_node = (node_t*)((char*)node + size);
     new_node->level = i-1;
     node->level = i-1;
-    freelist[i-1] = insert(new_node);
-
-    // new_node->size = node->size;
-    // new_node->vacant = 1;
-    // new_node->pre = node;
-    // new_node->succ = NULL;
-    // add_last(freelist, i-1, node);
-    // add_last(freelist, i-1, new_node);
+    fprintf(stderr, "levels:%d %d\n", node->level, new_node->level);
+    insert(new_node);
   }
   return node;
 }
 
-
-
-void merge(node_t* node)
+void merge(int level)
 {
-  printf("merging\n");
-  // if (node->level == MAX_LEVEL) {
-  //   return;
-  // }
-  // if (!freelist[level]) {
-  //   freelist[level] = node;
-  // } else {
-  //
-  //
-  // }
-
+  node_t* p = freelist[level];
+  if (p->next == NULL || level > MAX_LEVEL) {
+    fprintf(stderr, "NOTHING TO MERGE WITH\n");
+    return;
+  }
+  node_t* q = p;
+  while (p->next) {
+    if (!((int)&p % (2*level + 1)) && (&p->next - &p) == pow(2, level)) {
+      if (&p - &q == 0) {
+        freelist[level] = p->next->next;
+      } else {
+        q->next = p->next->next;
+      }
+      p->level+=1; //inc level
+      insert(p);
+      merge(level + 1);
+      return;
+    }
+    q = p;
+    p = p->next;
+  }
 }
 
 void free(void* node)
 {
   printf("free\n");
-  node-=1;
-  if (!node) {
+  node_t* p = (node_t*)node;
+  p-=1;
+  if (!p) {
     return;
   }
-  merge(node);
-
+  printf("merging\n");
+  int level = p->level;
+  printf("level %d\n", level);
+  insert(p);
+  merge(level);
 }
 
 void* malloc(size_t size)
@@ -170,7 +199,7 @@ void* malloc(size_t size)
   // printf("node_t size: %d\n", sizeof(node_t));
   // printf("order of 2: %d\n", n);
   int alloc_size = 2 << (n-1);
-  // printf("alloc size:%d\n", alloc_size);
+  printf("alloc size:%d\n", alloc_size);
   node_t* p;
   node_t* node;
   int closest_free_level = -1;
@@ -180,22 +209,23 @@ void* malloc(size_t size)
   }
 
   int level = get_level(alloc_size);
-
+  fprintf(stderr, "level to get: %d\n", level);
   if (freelist[level] != NULL) {
-    // node_t* node = pop_list(freelist, level);
-    node = freelist[level];
-    // node->vacant = 0;
-    // return node+1;
+    node = pop(level);
+    fprintf(stderr, "Get directly\n");
   } else {
-    closest_free_level = -1;
+    fprintf(stderr, "Split på g\n");
+    // closest_free_level = -1;
     for (size_t i = level + 1; i < 8; i++) {
       if(freelist[i] != NULL) {
         closest_free_level = i;
+        fprintf(stderr, "Level to split %d\n", closest_free_level);
         break;
       }
     }
     if (!closest_free_level) {
       //Add on new memory
+      fprintf(stderr, "NEED MORE MEMORY\n");
        p = (node_t*) sbrk(0);
        void* req = sbrk(INIT_SIZE);
        if (!req) {

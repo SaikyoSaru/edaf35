@@ -12,6 +12,7 @@ int main(int argc, char const *argv[]) {
   a[0] = 42;
   a[1] = 15;
   printf("a val: %d address:%zu, pointer val: %zu\n", *a, &a, a);
+  // free(a);
   a += 1;
   printf("a val: %d address:%zu, pointer val: %zu\n", *a, &a, a);
   int* b = calloc(1, sizeof(int));
