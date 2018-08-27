@@ -6,6 +6,7 @@
 #include "malloc.h"
 #include <math.h>
 
+#define META_SIZE sizeof(node_t)
 #define INIT_SIZE 2048 //consideration use pow?
 #define MAX_LEVEL 7
 
@@ -16,7 +17,7 @@ node_t* freelist[8];
 node_t* split(int high_level, int low_level);
 
 /*
-*Returns the level
+* Returns the level
 */
 int get_level(int size) {
   switch (size) {
@@ -39,26 +40,28 @@ int get_level(int size) {
   }
 }
 
+/*
+* Iitializes memory chunk to use
+*/
 void init()
 {
   for (size_t i = 0; i<8; i++) {
     freelist[i] = NULL;
   }
-  printf("Init\n");
   heap = sbrk(0);
   void* req = sbrk(INIT_SIZE);
   if (!req) {
-    fprintf(stderr, "FUUUUCK\n");
     return;
   }
-
   node_t* p = (node_t*) heap;
   p->level = MAX_LEVEL;
   p->next = NULL;
-  fprintf(stderr, "init level %d\n", p->level);
   freelist[MAX_LEVEL] = p;
 }
 
+/*
+* Inserts node into the freelist
+*/
 void insert(node_t* node)
 {
   int level = node->level;
@@ -84,11 +87,13 @@ void insert(node_t* node)
     }
   } else {
     freelist[level] = node;
-    fprintf(stderr, "YESSSSSS: %d\n", level);
   }
   return;
 }
 
+/*
+* Retrieves memory and removes it from the freelist
+*/
 node_t* pop(int level)
 {
   node_t* p = freelist[level];
@@ -102,7 +107,7 @@ node_t* pop(int level)
 }
 
 /*
-*splits until the succ size is found
+* splits until the right size is found
 */
 node_t* split(int high_level, int low_level)
 {
@@ -110,23 +115,22 @@ node_t* split(int high_level, int low_level)
   node = pop(high_level);
   for (size_t i = high_level; i > low_level; i--) {
     size_t size = pow(2, i+4-1);
-    fprintf(stderr, "size: %d\n", size);
-    fprintf(stderr, "level: %d\n", node->level-1);
     usleep(1000000);
     node_t* new_node = (node_t*)((char*)node + size);
     new_node->level = i-1;
     node->level = i-1;
-    fprintf(stderr, "levels:%d %d\n", node->level, new_node->level);
     insert(new_node);
   }
   return node;
 }
 
+/*
+* Merges adjacent buddies to a bigger chunk
+*/
 void merge(int level)
 {
   node_t* p = freelist[level];
   if (p->next == NULL || level > MAX_LEVEL) {
-    fprintf(stderr, "NOTHING TO MERGE WITH\n");
     return;
   }
   node_t* q = p;
@@ -149,32 +153,25 @@ void merge(int level)
 
 void free(void* node)
 {
-  printf("free\n");
   node_t* p = (node_t*)node;
   p-=1;
   if (!p) {
     return;
   }
-  printf("merging\n");
   int level = p->level;
-  printf("level %d\n", level);
   insert(p);
   merge(level);
 }
 
 void* malloc(size_t size)
 {
-  /*
-  * Allocate in power of 2
-  * Our node_t is 32 bytes
-  */
   if (size > INIT_SIZE) {
     return NULL;
   }
-  printf("malloc, desired size:%zu\n", size);
-  int n = (int)ceil(log2(size + sizeof(node_t)));
+
+  // Allocate in power of 2 Our node_t is 32 bytes
+  int n = (int)ceil(log2(size + META_SIZE));
   int alloc_size = 2 << (n-1);
-  printf("alloc size:%d\n", alloc_size);
   node_t* p;
   node_t* node;
   int closest_free_level = -1;
@@ -184,26 +181,20 @@ void* malloc(size_t size)
   }
 
   int level = get_level(alloc_size);
-  fprintf(stderr, "level to get: %d\n", level);
   if (freelist[level] != NULL) {
     node = pop(level);
-    fprintf(stderr, "Get directly\n");
   } else {
-    fprintf(stderr, "Split på g\n");
     for (size_t i = level + 1; i < 8; i++) {
       if(freelist[i] != NULL) {
         closest_free_level = i;
-        fprintf(stderr, "Level to split %d\n", closest_free_level);
         break;
       }
     }
     if (!closest_free_level) {
       //Add on new memory
-      fprintf(stderr, "NEED MORE MEMORY\n");
        p = (node_t*) sbrk(0);
        void* req = sbrk(INIT_SIZE);
        if (!req) {
-         printf("out of memory!!\n");
          return NULL;
        }
        p->level = MAX_LEVEL;

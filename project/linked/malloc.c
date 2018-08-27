@@ -5,28 +5,22 @@
 
 #include "malloc.h"
 
-typedef struct list_t list_t;
-
 #define META_SIZE sizeof(list_t)
 
 void *head = NULL;
 
-struct list_t {
-  list_t *next;
-  size_t size;
-  int vacant;
-};
-
+/*
+* Merge adjacent blocks
+*/
 void merge_list() {
   list_t *p, *q;
   p = head;
   if (!head) {
     return;
   }
-
   while (p->next) {
     if (p->vacant && p->next->vacant) {
-      p->size += p->next->size + sizeof(list_t);
+      p->size += p->next->size + META_SIZE;
       p->next = p->next->next;
     } else {
       q = p;
@@ -35,6 +29,9 @@ void merge_list() {
   }
 }
 
+/*
+* Find first free block of a big enough size
+*/
 list_t *first_free_block(list_t **last, size_t size) {
   list_t *p = head;
   while (p && !(p->vacant && p->size >= size)) {
@@ -44,6 +41,9 @@ list_t *first_free_block(list_t **last, size_t size) {
   return p;
 }
 
+/*
+* Create new block
+*/
 list_t *create_block(list_t *tail, size_t size) {
   list_t *new_block;
   new_block = sbrk(0);

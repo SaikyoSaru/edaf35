@@ -1,5 +1,5 @@
-#include "../linked/malloc.h"
-#include "../linked/malloc.c"
+#include "malloc.h"
+#include "malloc.c"
 
 int main(int argc, char const *argv[]) {
   printf("size: %zu\n", sizeof(int) + sizeof(node_t));
