@@ -61,12 +61,12 @@ list_t *create_block(list_t *tail, size_t size) {
 }
 
 void free(void *ptr) {
-  if (!ptr) {
+  if (ptr == NULL) {
     return;
   }
   list_t *p = (list_t *) ptr - 1;
   p->vacant = 1;
-  merge_list();
+  //merge_list();
 }
 
 void *malloc(size_t size) {
@@ -98,6 +98,9 @@ void *malloc(size_t size) {
 }
 
 void *calloc(size_t nitems, size_t size) {
+  if (nitems == 0 || size == 0) {
+    return NULL;
+  }
   void *p = malloc(nitems*size);
   if (p != NULL) {
     memset(p, 0, nitems*size);
