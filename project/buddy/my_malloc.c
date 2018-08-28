@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <unistd.h>
-#include <stdlib.h>
+// #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
 #include "my_malloc.h"
@@ -115,7 +115,6 @@ node_t* split(int high_level, int low_level)
   node = pop(high_level);
   for (size_t i = high_level; i > low_level; i--) {
     size_t size = pow(2, i+4-1);
-    usleep(1000000);
     node_t* new_node = (node_t*)((char*)node + size);
     new_node->level = i-1;
     node->level = i-1;
@@ -219,10 +218,21 @@ void* calloc(size_t nitems, size_t size)
 
 void* realloc(void* node, size_t size)
 {
-  node_t* p = malloc(size);
-  if (p != NULL) {
-    memmove(p, node, size);
-    free(node);
+  if (!node) {
+    return malloc(size);
   }
+  node_t* q = (node_t*)node;
+  int old_size = 2 << ((q-1)->level + 4 - 1);
+  // printf("size of transfer %d:\n", old_size);
+  //
+  // printf("Old, point at values:%d, %zu, %zu\n", *q, &q, q);
+  node_t* p = malloc(size);
+  // printf("New :%d, %zu, %zu\n", *p, &p, p);
+  if (p != NULL) {
+    memcpy(p, q, old_size - META_SIZE);
+    free(q);
+  }
+  // printf("Return values :%d, %zu, %zu\n", *p, &p, p);
+
   return p;
 }
