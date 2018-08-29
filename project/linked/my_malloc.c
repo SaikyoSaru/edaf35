@@ -64,9 +64,9 @@ void free(void *ptr) {
   if (ptr == NULL) {
     return;
   }
-  list_t *p = (list_t *) ptr - 1;
+  list_t *p = ((list_t *)ptr) - 1;
   p->vacant = 1;
-  //merge_list();
+  merge_list();
 }
 
 void *malloc(size_t size) {
@@ -113,13 +113,12 @@ void *realloc(void *ptr, size_t size) {
     return malloc(size);
   }
 
-  list_t *p = (list_t *) ptr - 1;
+  list_t *p = ((list_t *)ptr) - 1;
   if (p->size >= size) {
     return ptr;
   }
-  void* n;
-  n = malloc(size);
-  if (n) {
+  void* n = malloc(size);
+  if (!n) {
     return NULL;
   }
   memcpy(n, ptr, p->size);

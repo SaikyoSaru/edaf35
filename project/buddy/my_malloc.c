@@ -12,7 +12,7 @@
 
 void* heap;
 
-node_t* freelist[MAX_LEVEL - 1];
+node_t* freelist[MAX_LEVEL + 1];
 
 node_t* split(int high_level, int low_level);
 
@@ -28,7 +28,8 @@ int get_level(int size) {
 */
 void init()
 {
-  for (size_t i = 0; i < MAX_LEVEL; i++) {
+  //fprintf(stderr, "init\n");
+  for (int i = 0; i <= MAX_LEVEL; i++) {
     freelist[i] = NULL;
   }
   heap = sbrk(0);
@@ -40,6 +41,23 @@ void init()
   p->level = MAX_LEVEL;
   p->next = NULL;
   freelist[MAX_LEVEL] = p;
+}
+
+void printer(void)
+{
+  node_t* p;
+  for (int i = 0; i < MAX_LEVEL; i++) {
+    p = freelist[i];
+    while (p != NULL) {
+      //fprintf(stderr, "%d (%zu),", p->level, p);
+      p = p->next;
+    }
+    if (p == NULL) {
+      //fprintf(stderr, "-");
+    }
+    //fprintf(stderr, "  ");
+  }
+  //fprintf(stderr, "\n");
 }
 
 /*
@@ -101,8 +119,8 @@ node_t* split(int high_level, int low_level)
   node = pop(high_level);
   for (size_t i = high_level; i > low_level; i--) {
     //fprintf(stderr, "level: %d\n", i);
-    printer();
-    size_t size = 1 << i; // pow(2, i+4-1);
+    //printer();
+    size_t size = 1 << i - 1; // pow(2, i+4-1);
     node_t* new_node = (node_t*)((char*)node + size);
     //fprintf(stderr, "node: %zu, new_node: %zu\n", node, new_node);
     new_node->level = i-1;
@@ -112,23 +130,6 @@ node_t* split(int high_level, int low_level)
     insert(new_node);
   }
   return node;
-}
-
-void printer(void)
-{
-  node_t* p;
-  for (int i = 0; i <= MAX_LEVEL; i++) {
-    p = freelist[i];
-    while (p != NULL) {
-      //fprintf(stderr, "%d (%zu),", p->level, p);
-      p = p->next;
-    }
-    if (p == NULL) {
-      //fprintf(stderr, "-");
-    }
-    //fprintf(stderr, "  ");
-  }
-  //fprintf(stderr, "\n");
 }
 
 /*
@@ -173,11 +174,11 @@ void free(void* node)
     return;
   }
   int level = p->level;
-  printer();
+  //printer();
   insert(p);
-  printer();
+  //printer();
   merge(level);
-  printer();
+  //printer();
 }
 
 void* malloc(size_t size)
@@ -188,7 +189,7 @@ void* malloc(size_t size)
     //fprintf(stderr, "COMEON\n");
     return NULL;
   }
-  printer();
+  //printer();
   // Allocate in power of 2 Our node_t is 32 bytes
   int level = get_level(size + META_SIZE);
   //fprintf(stderr, "level for alloc shit:%d\n", level);
@@ -197,7 +198,7 @@ void* malloc(size_t size)
   node_t* node;
   int closest_free_level = -1;
 
-  if (!heap) {
+  if (heap == NULL) {
     init();
   }
 
@@ -205,7 +206,7 @@ void* malloc(size_t size)
   if (freelist[level] != NULL) {
     node = pop(level);
   } else {
-    for (size_t i = level + 1; i < MAX_LEVEL; i++) {
+    for (int i = level + 1; i <= MAX_LEVEL; i++) {
       if(freelist[i] != NULL) {
         closest_free_level = i;
         break;
@@ -226,7 +227,7 @@ void* malloc(size_t size)
     }
     node = split(closest_free_level, level);
   }
-  printer();
+  //printer();
   return (node+1);
 }
 
@@ -235,9 +236,10 @@ void* calloc(size_t nitems, size_t size)
 {
   //fprintf(stderr, "CALLOC\n");
   if (nitems == 0 || size == 0) {
+    //fprintf(stderr, "NO\n");
     return NULL;
   }
-  node_t* p = malloc(nitems*size);
+  void* p = malloc(nitems*size);
   if (p != NULL) {
     memset(p, 0, nitems*size);
   }
@@ -251,7 +253,7 @@ void* realloc(void* node, size_t size)
     return malloc(size);
   }
   node_t* q = (node_t*)node;
-  int old_size = 2 << ((q-1)->level + 4 - 1);
+  int old_size = 1 << ((q-1)->level);
   // printf("size of transfer %d:\n", old_size);
   //
   // printf("Old, point at values:%d, %zu, %zu\n", *q, &q, q);
